@@ -1,1 +1,82 @@
-# hausakte
+# Bauakte
+
+Ein Bau-Cockpit für den eigenen Hausbau: Stunden erfassen (mit Wert der
+Eigenleistung), Baufortschritt über Phasen verfolgen, Kosten gegen Budget,
+Material, Termine, Mängel, Bautagebuch, Fotos und Kontakte — alles an einem
+Ort und geräteübergreifend geteilt.
+
+Die App ist eine einzelne HTML-Datei ohne Build-Schritt. Die Daten liegen in
+Supabase, sodass sie auf mehreren Geräten dieselben Einträge zeigt.
+
+## Dateien
+
+- `index.html` — die komplette App
+- `supabase-setup.sql` — richtet Tabelle, Zugriffsregeln und Foto-Ordner ein
+- `.gitignore`
+
+## Einrichtung
+
+### 1. Supabase vorbereiten
+
+1. Im [Supabase-Dashboard](https://supabase.com/dashboard) das Projekt öffnen.
+2. Unter **Storage** einen Bucket namens **`fotos`** anlegen und als
+   **Public** markieren.
+3. Unter **SQL Editor** den Inhalt von `supabase-setup.sql` einfügen und
+   **Run** klicken.
+
+### 2. Zugangsdaten
+
+In `index.html` sind ganz oben im Skript zwei Werte hinterlegt:
+
+```js
+const SUPABASE_URL = 'https://…supabase.co';
+const SUPABASE_KEY = 'sb_publishable_…';
+```
+
+Das ist der **Publishable Key** — er ist für Client-Code gedacht und darf im
+Code stehen. Der geheime `sb_secret_…`-Schlüssel gehört **nicht** hier hinein.
+Falls du das Projekt wechselst, hier die beiden Werte anpassen.
+
+### 3. Lokal testen
+
+Am einfachsten über einen kleinen lokalen Server:
+
+```bash
+python3 -m http.server 8000
+```
+
+Dann `http://localhost:8000` im Browser öffnen. (Direktes Öffnen der Datei
+per Doppelklick kann je nach Browser an CORS scheitern — der lokale Server
+umgeht das.)
+
+### 4. Veröffentlichen mit GitHub Pages
+
+1. Repository zu GitHub pushen.
+2. **Settings → Pages → Build and deployment**: Source = *Deploy from a
+   branch*, Branch = `main`, Ordner = `/ (root)`, speichern.
+3. Nach kurzer Zeit ist die App unter der angezeigten Pages-Adresse
+   erreichbar. Weil die Datei `index.html` heißt, wird sie automatisch
+   ausgeliefert.
+
+## Geräteübergreifender Abgleich
+
+Einträge werden sofort in Supabase gespeichert. Auf dem anderen Gerät
+erscheinen sie beim Öffnen bzw. Zurückwechseln zur App und ansonsten
+spätestens nach etwa 15 Sekunden, solange die App offen ist. Bei
+gleichzeitigem Bearbeiten gilt: Der zuletzt gespeicherte Stand gewinnt.
+
+## Sicherheit — bitte lesen
+
+Die App läuft derzeit mit **offenem Zugriff**: Wer die Adresse und den
+öffentlichen Schlüssel kennt, kann Daten lesen und schreiben. Das ist zum
+Testen okay, solange das Repository **privat** bleibt.
+
+**Vor einer öffentlichen Veröffentlichung** sollte ein einfacher Login
+ergänzt werden (nur die berechtigten Personen), zusammen mit strengeren
+Zugriffsregeln. Die vorläufige Regel `offen_vorlaeufig` in
+`supabase-setup.sql` wird dabei ersetzt.
+
+## Erste Schritte in der App
+
+Zuerst im Reiter **Projekt** Budget, Stundensatz und die Namen setzen. Der
+Stundensatz bestimmt den ausgewiesenen Wert der Eigenleistung.

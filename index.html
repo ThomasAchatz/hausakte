@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Bauakte · Eigenheim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --paper:#E7E9E2;
+    --paper-2:#F3F4EF;
+    --card:#FBFBF8;
+    --ink:#1E2621;
+    --ink-soft:#5A625B;
+    --ink-faint:#8A9088;
+    --line:#C7CBC0;
+    --line-strong:#AEB3A7;
+    --accent:#2C5D63;      /* patina / galvanised steel */
+    --accent-deep:#1F464B;
+    --accent-soft:#DDE7E6;
+    --signal:#B4552D;      /* brick — warnings / over budget */
+    --signal-soft:#F0DACF;
+    --grid:rgba(30,38,33,0.05);
+    --grid-strong:rgba(30,38,33,0.09);
+    --radius:3px;
+    --shadow:0 1px 0 rgba(30,38,33,0.04);
+    --font-display:"Oswald","Arial Narrow",system-ui,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--font-body);
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+      linear-gradient(var(--grid-strong) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid-strong) 1px,transparent 1px);
+    background-size:12px 12px,12px 12px,60px 60px,60px 60px;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+    padding-bottom:76px;
+  }
+
+  /* ---------- header / titleblock ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:var(--ink);color:var(--paper);
+    border-bottom:2px solid var(--accent);
+  }
+  .titleblock{
+    display:flex;align-items:center;gap:14px;
+    padding:11px 16px;max-width:920px;margin:0 auto;
+  }
+  .glyph{
+    width:34px;height:34px;flex:none;
+    border:1.5px solid var(--accent);border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(44,93,99,0.15);
+  }
+  .glyph svg{width:22px;height:22px;}
+  .tb-main{flex:1;min-width:0;}
+  .tb-main .kicker{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent-soft);opacity:.75;
+  }
+  .tb-main h1{
+    font-family:var(--font-display);font-weight:600;font-size:18px;
+    letter-spacing:.03em;line-height:1.1;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .tb-prog{text-align:right;flex:none;font-family:var(--font-mono);}
+  .tb-prog .pct{font-size:22px;font-weight:600;line-height:1;color:#fff;}
+  .tb-prog .lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-soft);opacity:.75;}
+
+  main{max-width:920px;margin:0 auto;padding:16px 14px 40px;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  /* ---------- section headers ---------- */
+  .view-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:10px;margin:2px 0 14px;
+    border-bottom:1.5px solid var(--ink);padding-bottom:8px;
+  }
+  .view-head h2{
+    font-family:var(--font-display);font-weight:600;font-size:22px;
+    letter-spacing:.02em;text-transform:uppercase;
+  }
+  .view-head .idx{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);letter-spacing:.1em;}
+
+  /* ---------- cards ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);
+    margin-bottom:12px;
+  }
+  .card-h{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:10px 13px;border-bottom:1px solid var(--line);
+  }
+  .card-h .eyebrow{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .card-b{padding:13px;}
+
+  .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);}
+
+  /* ---------- dashboard grid ---------- */
+  .dash{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .dash .span2{grid-column:1 / -1;}
+  .metric{padding:13px;}
+  .metric .val{font-family:var(--font-mono);font-size:26px;font-weight:600;line-height:1;color:var(--ink);}
+  .metric .val.small{font-size:20px;}
+  .metric .unit{font-size:12px;color:var(--ink-soft);font-weight:500;}
+  .metric .sub{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);margin-top:6px;letter-spacing:.02em;}
+  .metric .sub.warn{color:var(--signal);font-weight:600;}
+  .metric .sub.ok{color:var(--accent);font-weight:600;}
+
+  /* section cross of dashboard */
+  .hero{display:flex;gap:14px;align-items:center;padding:14px;}
+  .hero .section-svg{flex:none;}
+  .hero .hero-txt{flex:1;min-width:0;}
+  .hero .phase-now{
+    font-family:var(--font-display);font-weight:600;font-size:19px;
+    text-transform:uppercase;letter-spacing:.02em;line-height:1.1;
+  }
+  .hero .phase-lbl{margin-bottom:3px;}
+  .hero .phase-next{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);margin-top:8px;}
+
+  /* ---------- progress bars ---------- */
+  .bar{height:7px;background:var(--accent-soft);border-radius:2px;overflow:hidden;margin-top:8px;}
+  .bar > i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .5s ease;}
+
+  /* ---------- buttons ---------- */
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;justify-content:center;
+    font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:500;padding:10px 15px;border-radius:var(--radius);
+    background:var(--accent);color:#fff;border:1px solid var(--accent-deep);
+    transition:background .15s;
+  }
+  .btn:hover{background:var(--accent-deep);}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line-strong);}
+  .btn.ghost:hover{background:var(--accent-soft);}
+  .btn.block{width:100%;}
+  .btn.sm{padding:7px 11px;font-size:11px;}
+  .btn.danger{background:transparent;color:var(--signal);border:1px solid var(--signal-soft);}
+  .btn.danger:hover{background:var(--signal-soft);}
+  .add-row{margin:4px 0 16px;}
+
+  /* ---------- list items ---------- */
+  .item{
+    display:flex;gap:11px;align-items:flex-start;
+    padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--card);margin-bottom:8px;box-shadow:var(--shadow);
+  }
+  .item .grow{flex:1;min-width:0;}
+  .item .t1{font-weight:600;font-size:14px;line-height:1.3;}
+  .item .t2{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);margin-top:3px;letter-spacing:.02em;}
+  .item .amt{font-family:var(--font-mono);font-weight:600;font-size:14px;white-space:nowrap;}
+  .item .amt.neg{color:var(--signal);}
+  .row-x{color:var(--ink-faint);font-size:18px;line-height:1;padding:2px 4px;flex:none;}
+  .row-x:hover{color:var(--signal);}
+
+  .datechip{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
+    background:var(--accent-soft);color:var(--accent-deep);
+    padding:3px 6px;border-radius:2px;white-space:nowrap;flex:none;
+    text-transform:uppercase;font-weight:600;
+  }
+  .tag{
+    font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 7px;border-radius:2px;border:1px solid var(--line-strong);
+    color:var(--ink-soft);white-space:nowrap;
+  }
+  .tag.on{background:var(--accent);color:#fff;border-color:var(--accent-deep);}
+  .tag.mid{background:#E8DFC4;color:#6b5a24;border-color:#cdbf94;}
+  .tag.warn{background:var(--signal-soft);color:var(--signal);border-color:var(--signal);}
+
+  .empty{
+    text-align:center;padding:26px 16px;color:var(--ink-soft);
+    border:1px dashed var(--line-strong);border-radius:var(--radius);
+    font-size:13px;background:rgba(255,255,255,.4);
+  }
+  .empty b{display:block;font-family:var(--font-display);text-transform:uppercase;
+    letter-spacing:.04em;font-size:15px;color:var(--ink);margin-bottom:4px;font-weight:600;}
+
+  /* ---------- phases ---------- */
+  .phase{
+    display:flex;align-items:center;gap:11px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--card);margin-bottom:7px;box-shadow:var(--shadow);
+  }
+  .phase .num{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);width:22px;flex:none;}
+  .phase .pname{flex:1;font-weight:500;font-size:14px;}
+  .phase.done .pname{color:var(--ink-soft);}
+  .phase .cyc{
+    font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:5px 9px;border-radius:2px;border:1px solid var(--line-strong);flex:none;font-weight:600;
+  }
+  .phase.done .cyc{background:var(--accent);color:#fff;border-color:var(--accent-deep);}
+  .phase.wip .cyc{background:#E8DFC4;color:#6b5a24;border-color:#cdbf94;}
+
+  /* ---------- forms / modal ---------- */
+  .backdrop{
+    position:fixed;inset:0;background:rgba(20,26,22,.55);z-index:100;
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .backdrop.open{display:flex;}
+  .sheet{
+    background:var(--paper-2);width:100%;max-width:920px;
+    border-top-left-radius:12px;border-top-right-radius:12px;
+    border-top:2px solid var(--accent);
+    max-height:88vh;overflow-y:auto;animation:up .28s ease;
+  }
+  @keyframes up{from{transform:translateY(100%);}to{transform:none;}}
+  .sheet-h{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:15px 18px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--paper-2);z-index:2;
+  }
+  .sheet-h h3{font-family:var(--font-display);text-transform:uppercase;font-size:18px;letter-spacing:.03em;font-weight:600;}
+  .sheet-b{padding:16px 18px 22px;}
+  label.f{display:block;margin-bottom:13px;}
+  label.f .lab{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:5px;display:block;
+  }
+  input,select,textarea{
+    width:100%;font-family:var(--font-body);font-size:15px;color:var(--ink);
+    background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius);
+    padding:10px 11px;outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);}
+  textarea{min-height:80px;resize:vertical;font-family:var(--font-body);}
+  input[type=number]{font-family:var(--font-mono);}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;}
+  .seg button{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--radius);
+    background:#fff;color:var(--ink-soft);flex:1;min-width:70px;
+  }
+  .seg button.sel{background:var(--accent);color:#fff;border-color:var(--accent-deep);}
+
+  /* ---------- photos ---------- */
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+  .photo{
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    background:var(--card);box-shadow:var(--shadow);position:relative;
+  }
+  .photo img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--paper);}
+  .photo .cap{padding:8px 10px;}
+  .photo .cap .t1{font-weight:600;font-size:13px;line-height:1.25;}
+  .photo .cap .t2{font-family:var(--font-mono);font-size:10px;color:var(--ink-soft);margin-top:3px;}
+  .photo .del{position:absolute;top:6px;right:6px;background:rgba(20,26,22,.72);color:#fff;
+    width:26px;height:26px;border-radius:2px;font-size:16px;line-height:1;}
+  .photo .del:hover{background:var(--signal);}
+
+  /* ---------- bottom nav ---------- */
+  nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:60;
+    background:var(--card);border-top:1px solid var(--line-strong);
+    display:flex;overflow-x:auto;scrollbar-width:none;
+    box-shadow:0 -2px 8px rgba(30,38,33,.06);
+  }
+  nav::-webkit-scrollbar{display:none;}
+  nav button{
+    flex:1 0 auto;min-width:62px;padding:8px 4px 7px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--ink-faint);border-top:2px solid transparent;
+  }
+  nav button svg{width:20px;height:20px;}
+  nav button .nlab{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;}
+  nav button.active{color:var(--accent);border-top-color:var(--accent);}
+
+  .footer-tb{
+    margin-top:24px;padding-top:12px;border-top:1px solid var(--line);
+    font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);
+    letter-spacing:.04em;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  }
+
+  .banner{
+    background:var(--signal-soft);border:1px solid var(--signal);color:var(--signal);
+    font-family:var(--font-mono);font-size:11px;padding:8px 12px;border-radius:var(--radius);
+    margin-bottom:14px;letter-spacing:.02em;
+  }
+  .toast{
+    position:fixed;bottom:88px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--paper);font-family:var(--font-mono);font-size:12px;
+    padding:10px 16px;border-radius:var(--radius);z-index:200;letter-spacing:.04em;
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+    border-left:3px solid var(--accent);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  @media(min-width:620px){
+    .dash{grid-template-columns:1fr 1fr 1fr;}
+    .dash .heroCard{grid-column:span 2;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titleblock">
+    <div class="glyph" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7FBAC0" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/>
+      </svg>
+    </div>
+    <div class="tb-main">
+      <div class="kicker">Bauakte · Eigenleistung</div>
+      <h1 id="projName">Unser Eigenheim</h1>
+    </div>
+    <div class="tb-prog">
+      <div class="pct" id="hdrPct">0%</div>
+      <div class="lbl">Fortschritt</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="storageBanner" class="banner" style="display:none">
+    ⚠︎ Speicher nicht verfügbar — Eingaben bleiben nur bis zum Schließen erhalten.
+  </div>
+
+  <!-- ÜBERSICHT -->
+  <section class="view active" id="v-dash">
+    <div class="view-head"><h2>Übersicht</h2><span class="idx">00 · COCKPIT</span></div>
+    <div class="dash" id="dashGrid"></div>
+    <div class="footer-tb" id="footerTb"></div>
+  </section>
+
+  <!-- STUNDEN -->
+  <section class="view" id="v-stunden">
+    <div class="view-head"><h2>Stunden</h2><span class="idx">01 · EIGENLEISTUNG</span></div>
+    <div id="stundenSummary"></div>
+    <div class="add-row"><button class="btn block" onclick="openStunden()">+ Stunden erfassen</button></div>
+    <div id="stundenList"></div>
+  </section>
+
+  <!-- FORTSCHRITT -->
+  <section class="view" id="v-fortschritt">
+    <div class="view-head"><h2>Fortschritt</h2><span class="idx">02 · BAUPHASEN</span></div>
+    <div class="card"><div class="card-b" id="crossWrap" style="display:flex;justify-content:center;padding:18px;"></div></div>
+    <div id="phaseList"></div>
+  </section>
+
+  <!-- KOSTEN -->
+  <section class="view" id="v-kosten">
+    <div class="view-head"><h2>Kosten</h2><span class="idx">03 · BUDGET</span></div>
+    <div id="kostenSummary"></div>
+    <div class="add-row"><button class="btn block" onclick="openKosten()">+ Beleg erfassen</button></div>
+    <div id="kostenList"></div>
+  </section>
+
+  <!-- MATERIAL -->
+  <section class="view" id="v-material">
+    <div class="view-head"><h2>Material</h2><span class="idx">04 · BESTELLUNGEN</span></div>
+    <div class="add-row"><button class="btn block" onclick="openMaterial()">+ Material hinzufügen</button></div>
+    <div id="materialList"></div>
+  </section>
+
+  <!-- TERMINE -->
+  <section class="view" id="v-termine">
+    <div class="view-head"><h2>Termine</h2><span class="idx">05 · KALENDER</span></div>
+    <div class="add-row"><button class="btn block" onclick="openTermin()">+ Termin hinzufügen</button></div>
+    <div id="termineList"></div>
+  </section>
+
+  <!-- MÄNGEL -->
+  <section class="view" id="v-maengel">
+    <div class="view-head"><h2>Mängel</h2><span class="idx">06 · NACHBESSERUNG</span></div>
+    <div class="add-row"><button class="btn block" onclick="openMangel()">+ Mangel notieren</button></div>
+    <div id="maengelList"></div>
+  </section>
+
+  <!-- TAGEBUCH -->
+  <section class="view" id="v-tagebuch">
+    <div class="view-head"><h2>Bautagebuch</h2><span class="idx">07 · JOURNAL</span></div>
+    <div class="add-row"><button class="btn block" onclick="openTagebuch()">+ Eintrag schreiben</button></div>
+    <div id="tagebuchList"></div>
+  </section>
+
+  <!-- BILDER -->
+  <section class="view" id="v-bilder">
+    <div class="view-head"><h2>Bilder</h2><span class="idx">08 · FOTODOKU</span></div>
+    <div class="add-row"><button class="btn block" onclick="document.getElementById('fileInput').click()">+ Foto hochladen</button></div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+    <div id="bilderGrid"></div>
+  </section>
+
+  <!-- KONTAKTE -->
+  <section class="view" id="v-kontakte">
+    <div class="view-head"><h2>Kontakte</h2><span class="idx">09 · BETEILIGTE</span></div>
+    <div class="add-row"><button class="btn block" onclick="openKontakt()">+ Kontakt hinzufügen</button></div>
+    <div id="kontakteList"></div>
+  </section>
+
+  <!-- EINSTELLUNGEN -->
+  <section class="view" id="v-setup">
+    <div class="view-head"><h2>Projekt</h2><span class="idx">10 · STAMMDATEN</span></div>
+    <div class="card"><div class="card-b" id="setupBody"></div></div>
+  </section>
+</main>
+
+<div class="backdrop" id="backdrop"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<nav id="nav"></nav>
+
+<script>
+/* ============================================================
+   BAUAKTE — Bau-Cockpit für Eigenleistung
+   Speicher: window.storage (shared), Fallback: In-Memory
+   ============================================================ */
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const eur = n => (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' €';
+const eur2 = n => (Number(n)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+const hrs = n => (Number(n)||0).toLocaleString('de-DE',{maximumFractionDigits:1});
+const fmtDate = s => { if(!s) return '—'; const d=new Date(s+'T00:00:00'); if(isNaN(d)) return s;
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}); };
+const today = () => new Date().toISOString().slice(0,10);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- Supabase storage layer ---------- */
+const SUPABASE_URL = 'https://lmivqyeuluqtxmpnojgz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XZksHj8kBG7POmhlDWxIrw_9CyH2RI4';
+const DATA_KEY = 'bauakte-data';
+const BUCKET = 'fotos';
+
+let sb = null;
+try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
+
+function connErr(msg){
+  const b=document.getElementById('storageBanner'); if(!b) return;
+  if(msg){ b.textContent='⚠︎ '+msg; b.style.display='block'; }
+  else b.style.display='none';
+}
+
+const cloud = {
+  async loadData(){
+    if(!sb) return {data:null, ts:null};
+    const {data:row, error} = await sb.from('bauakte').select('value,updated_at').eq('key',DATA_KEY).maybeSingle();
+    if(error){ connErr('Verbindung zu Supabase fehlgeschlagen.'); return {data:null, ts:null}; }
+    connErr(null);
+    return row ? {data:row.value, ts:row.updated_at} : {data:null, ts:null};
+  },
+  async saveData(obj){
+    if(!sb){ connErr('Kein Speicher verbunden — bist du online?'); return null; }
+    const ts=new Date().toISOString();
+    const {error} = await sb.from('bauakte').upsert({key:DATA_KEY, value:obj, updated_at:ts}, {onConflict:'key'});
+    if(error){ connErr('Speichern fehlgeschlagen — wird erneut versucht.'); return null; }
+    connErr(null);
+    return ts;
+  },
+  async uploadPhoto(id, blob){
+    if(!sb) return null;
+    const path=id+'.jpg';
+    const {error} = await sb.storage.from(BUCKET).upload(path, blob, {contentType:'image/jpeg', upsert:true});
+    if(error){ return null; }
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  },
+  async deletePhoto(id){
+    if(!sb) return;
+    try{ await sb.storage.from(BUCKET).remove([id+'.jpg']); }catch(e){}
+  }
+};
+if(!sb) connErr('Supabase-Bibliothek nicht geladen — bist du online?');
+
+const DEFAULT_PHASES = [
+  'Aushub & Fundament','Bodenplatte / Keller','Rohbau Erdgeschoss','Rohbau Obergeschoss',
+  'Dachstuhl','Dacheindeckung','Fenster & Türen','Elektro & Sanitär (Roh)',
+  'Innenputz & Estrich','Innenausbau','Böden & Fliesen','Malerarbeiten',
+  'Außenanlagen','Abnahme & Einzug'
+];
+
+let data = null;
+const blankData = () => ({
+  meta:{ projekt:'Unser Eigenheim', ort:'Straubing', budget:0, stundensatz:25, lastBy:'', lastAt:'' },
+  personen:['Isabella','Thomas'],
+  stunden:[], kosten:[], material:[], termine:[], maengel:[], kontakte:[], tagebuch:[],
+  bilder:[],
+  phasen: DEFAULT_PHASES.map((n,i)=>({id:'p'+i, name:n, status:'offen'}))
+});
+
+let saveTimer=null, saving=false, localTs=null;
+function persist(who){
+  if(who!==undefined){ data.meta.lastBy=who; }
+  data.meta.lastAt = new Date().toISOString();
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(doSave, 350);
+}
+async function doSave(){
+  saving=true;
+  const ts=await cloud.saveData(data);
+  if(ts) localTs=ts;
+  saving=false;
+}
+function fillGaps(d){
+  const b=blankData();
+  for(const k in b){ if(!(k in d)) d[k]=b[k]; }
+  if(!d.meta) d.meta=b.meta;
+  for(const k in b.meta){ if(d.meta[k]===undefined) d.meta[k]=b.meta[k]; }
+  if(!d.phasen || !d.phasen.length) d.phasen=b.phasen;
+  return d;
+}
+// Abgleich: holt neuere Daten vom anderen Gerät, ohne eigene laufende Änderungen zu überschreiben
+async function pullRemote(){
+  if(saving || backdrop.classList.contains('open')) return;
+  const {data:remote, ts} = await cloud.loadData();
+  if(!remote || !ts) return;
+  if(localTs && ts<=localTs) return;
+  localTs = ts;
+  data = fillGaps(remote);
+  renderAll();
+}
+
+/* ---------- progress ---------- */
+function progress(){
+  const ph=data.phasen; if(!ph.length) return 0;
+  let s=0; ph.forEach(p=>{ s += p.status==='fertig'?1 : p.status==='laufend'?0.5:0; });
+  return Math.round(s/ph.length*100);
+}
+function currentPhase(){
+  return data.phasen.find(p=>p.status==='laufend')
+      || data.phasen.find(p=>p.status==='offen')
+      || data.phasen[data.phasen.length-1];
+}
+
+/* ---------- cross-section SVG (signature) ---------- */
+function crossSVG(size){
+  const p = progress()/100;
+  const W=200,H=250, apex=26, eave=104, base=214;
+  const fillTop = base - p*(base-apex);
+  const bodyPath = `M40 ${eave} L40 ${base} L160 ${base} L160 ${eave} Z`;
+  const roofPath = `M28 ${eave} L100 ${apex} L172 ${eave} Z`;
+  // floor tick marks aligned to phases
+  const n=data.phasen.length;
+  let ticks='';
+  for(let i=1;i<n;i++){
+    const y = base - (i/n)*(base-apex);
+    ticks += `<line x1="24" y1="${y}" x2="30" y2="${y}" stroke="var(--line-strong)" stroke-width="1"/>`;
+  }
+  return `
+  <svg viewBox="0 0 ${W} ${H}" width="${size}" height="${size*H/W}" role="img" aria-label="Baufortschritt ${Math.round(p*100)} Prozent">
+    <defs>
+      <clipPath id="houseClip"><path d="${bodyPath}"/><path d="${roofPath}"/></clipPath>
+      <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="7" stroke="var(--accent)" stroke-width="1.1" opacity="0.55"/>
+      </pattern>
+    </defs>
+    <!-- ground -->
+    <line x1="10" y1="${base}" x2="190" y2="${base}" stroke="var(--ink)" stroke-width="1.4"/>
+    <rect x="46" y="${base}" width="108" height="9" fill="url(#hatch)" opacity="0.5"/>
+    <!-- fill -->
+    <g clip-path="url(#houseClip)">
+      <rect x="0" y="${base}" width="${W}" height="1" fill="var(--accent-soft)"/>
+      <rect x="0" y="${fillTop}" width="${W}" height="${base-fillTop+2}" fill="var(--accent)" opacity="0.9"/>
+      <rect x="0" y="${fillTop}" width="${W}" height="3" fill="var(--accent-deep)"/>
+    </g>
+    <!-- outline -->
+    <path d="${bodyPath}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="${roofPath}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>
+    <line x1="100" y1="${apex}" x2="100" y2="${base}" stroke="var(--ink)" stroke-width="0.7" opacity="0.25" stroke-dasharray="3 4"/>
+    ${ticks}
+    <text x="100" y="${apex-8}" text-anchor="middle" font-family="var(--font-mono)" font-size="17" font-weight="600" fill="var(--ink)">${Math.round(p*100)}%</text>
+  </svg>`;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderAll(){
+  document.getElementById('projName').textContent = data.meta.projekt || 'Unser Eigenheim';
+  document.getElementById('hdrPct').textContent = progress()+'%';
+  renderDash(); renderStunden(); renderPhases(); renderKosten();
+  renderMaterial(); renderTermine(); renderMaengel(); renderTagebuch();
+  renderBilder(); renderKontakte(); renderSetup();
+}
+
+function renderDash(){
+  const totalH = data.stunden.reduce((a,x)=>a+(+x.stunden||0),0);
+  const wert = totalH * (+data.meta.stundensatz||0);
+  const spent = data.kosten.reduce((a,x)=>a+(+x.betrag||0),0);
+  const budget = +data.meta.budget||0;
+  const rest = budget - spent;
+  const offMangel = data.maengel.filter(m=>m.status!=='erledigt').length;
+  const cp = currentPhase();
+  const nextP = data.phasen.find(p=>p.status==='offen');
+  const upcoming = data.termine.filter(t=>t.datum>=today()).sort((a,b)=>a.datum.localeCompare(b.datum))[0];
+
+  // per person
+  const perP = {};
+  data.stunden.forEach(x=>{ perP[x.person]=(perP[x.person]||0)+(+x.stunden||0); });
+  const perPStr = Object.keys(perP).length
+    ? Object.entries(perP).map(([k,v])=>`${esc(k)} ${hrs(v)}h`).join(' · ') : 'noch keine';
+
+  const budgetBar = budget>0 ? Math.min(100, Math.round(spent/budget*100)) : 0;
+  const lastLog = [...data.tagebuch].sort((a,b)=>b.datum.localeCompare(a.datum))[0];
+
+  document.getElementById('dashGrid').innerHTML = `
+    <div class="card heroCard span2">
+      <div class="hero">
+        <div class="section-svg">${crossSVG(96)}</div>
+        <div class="hero-txt">
+          <div class="eyebrow phase-lbl">Aktuelle Phase</div>
+          <div class="phase-now">${cp?esc(cp.name):'—'}</div>
+          <div class="phase-next">${nextP && nextP!==cp ? 'Als Nächstes: '+esc(nextP.name) : (progress()===100?'Alle Phasen erledigt 🎉':'')}</div>
+          <div class="bar"><i style="width:${progress()}%"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card"><div class="metric">
+      <div class="eyebrow">Eigenleistung</div>
+      <div class="val">${hrs(totalH)}<span class="unit"> h</span></div>
+      <div class="sub">${perPStr}</div>
+    </div></div>
+
+    <div class="card"><div class="metric">
+      <div class="eyebrow">Gesparter Wert</div>
+      <div class="val small">${eur(wert)}</div>
+      <div class="sub">≈ ${eur(data.meta.stundensatz)}/h angesetzt</div>
+    </div></div>
+
+    <div class="card"><div class="metric">
+      <div class="eyebrow">Ausgaben</div>
+      <div class="val small">${eur(spent)}</div>
+      ${budget>0
+        ? `<div class="bar"><i style="width:${budgetBar}%;background:${rest<0?'var(--signal)':'var(--accent)'}"></i></div>
+           <div class="sub ${rest<0?'warn':'ok'}">${rest<0?'Budget +'+eur(-rest)+' über':eur(rest)+' übrig'}</div>`
+        : `<div class="sub">Budget im Reiter „Projekt" setzen</div>`}
+    </div></div>
+
+    <div class="card"><div class="metric">
+      <div class="eyebrow">Nächster Termin</div>
+      ${upcoming
+        ? `<div class="val small">${fmtDate(upcoming.datum)}</div><div class="sub">${esc(upcoming.titel)}</div>`
+        : `<div class="val small" style="color:var(--ink-faint)">—</div><div class="sub">keine geplant</div>`}
+    </div></div>
+
+    <div class="card"><div class="metric">
+      <div class="eyebrow">Offene Mängel</div>
+      <div class="val">${offMangel}</div>
+      <div class="sub ${offMangel>0?'warn':'ok'}">${offMangel>0?'zu erledigen':'alles sauber'}</div>
+    </div></div>
+
+    <div class="card span2"><div class="metric">
+      <div class="eyebrow">Letzter Tagebucheintrag</div>
+      ${lastLog
+        ? `<div class="sub" style="margin-top:4px;color:var(--ink)"><b style="font-family:var(--font-mono)">${fmtDate(lastLog.datum)}</b> — ${esc(lastLog.text).slice(0,140)}${lastLog.text.length>140?'…':''}</div>`
+        : `<div class="sub">Noch nichts notiert — der erste Bautag will festgehalten werden.</div>`}
+    </div></div>
+  `;
+
+  const f=document.getElementById('footerTb');
+  const when = data.meta.lastAt ? new Date(data.meta.lastAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+  f.innerHTML = `<span>PROJEKT · ${esc(data.meta.ort||'')}</span><span>ZULETZT: ${esc(data.meta.lastBy||'—')} · ${when}</span>`;
+}
+
+function renderStunden(){
+  const totalH = data.stunden.reduce((a,x)=>a+(+x.stunden||0),0);
+  const wert = totalH*(+data.meta.stundensatz||0);
+  document.getElementById('stundenSummary').innerHTML = `
+    <div class="card"><div class="card-b" style="display:flex;justify-content:space-between;gap:12px;">
+      <div><div class="eyebrow">Gesamt</div><div class="metric" style="padding:0"><div class="val">${hrs(totalH)}<span class="unit"> h</span></div></div></div>
+      <div style="text-align:right"><div class="eyebrow">Wert (Muskelhypothek)</div><div class="metric" style="padding:0"><div class="val small">${eur(wert)}</div></div></div>
+    </div></div>`;
+  const list = [...data.stunden].sort((a,b)=>b.datum.localeCompare(a.datum));
+  const el=document.getElementById('stundenList');
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Noch keine Stunden</b>Trag euren ersten Bautag ein — jede Stunde zählt.</div>`; return; }
+  el.innerHTML = list.map(x=>`
+    <div class="item">
+      <span class="datechip">${fmtDate(x.datum)}</span>
+      <div class="grow">
+        <div class="t1">${esc(x.person)}</div>
+        <div class="t2">${esc(x.taetigkeit)||'—'}</div>
+      </div>
+      <span class="amt">${hrs(x.stunden)} h</span>
+      <button class="row-x" onclick="del('stunden','${x.id}')" aria-label="Löschen">×</button>
+    </div>`).join('');
+}
+
+function renderPhases(){
+  document.getElementById('crossWrap').innerHTML = crossSVG(180);
+  const cyc = {offen:'Offen', laufend:'Läuft', fertig:'Fertig'};
+  document.getElementById('phaseList').innerHTML = data.phasen.map((p,i)=>`
+    <div class="phase ${p.status==='fertig'?'done':p.status==='laufend'?'wip':''}">
+      <span class="num">${String(i+1).padStart(2,'0')}</span>
+      <span class="pname">${esc(p.name)}</span>
+      <button class="cyc" onclick="cyclePhase('${p.id}')">${cyc[p.status]}</button>
+    </div>`).join('');
+}
+function cyclePhase(id){
+  const p=data.phasen.find(x=>x.id===id); if(!p) return;
+  p.status = p.status==='offen'?'laufend':p.status==='laufend'?'fertig':'offen';
+  persist(); renderPhases(); renderDash();
+  document.getElementById('hdrPct').textContent = progress()+'%';
+}
+
+function renderKosten(){
+  const spent = data.kosten.reduce((a,x)=>a+(+x.betrag||0),0);
+  const budget=+data.meta.budget||0, rest=budget-spent;
+  const bar = budget>0?Math.min(100,Math.round(spent/budget*100)):0;
+  document.getElementById('kostenSummary').innerHTML = `
+    <div class="card"><div class="card-b">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+        <div><div class="eyebrow">Ausgegeben</div><div class="metric" style="padding:0"><div class="val small">${eur2(spent)}</div></div></div>
+        <div style="text-align:right"><div class="eyebrow">Budget</div><div class="metric" style="padding:0"><div class="val small">${budget>0?eur(budget):'—'}</div></div></div>
+      </div>
+      ${budget>0?`<div class="bar"><i style="width:${bar}%;background:${rest<0?'var(--signal)':'var(--accent)'}"></i></div>
+        <div class="metric" style="padding:6px 0 0"><div class="sub ${rest<0?'warn':'ok'}">${rest<0?eur(-rest)+' über Budget':eur(rest)+' verbleibend'}</div></div>`:''}
+    </div></div>`;
+  const list=[...data.kosten].sort((a,b)=>b.datum.localeCompare(a.datum));
+  const el=document.getElementById('kostenList');
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Belege</b>Erfasse Rechnungen und Materialkosten, um euer Budget im Blick zu halten.</div>`; return; }
+  el.innerHTML=list.map(x=>`
+    <div class="item">
+      <span class="datechip">${fmtDate(x.datum)}</span>
+      <div class="grow">
+        <div class="t1">${esc(x.bezeichnung)}</div>
+        <div class="t2">${esc(x.kategorie)||'Sonstiges'}</div>
+      </div>
+      <span class="amt neg">${eur2(x.betrag)}</span>
+      <button class="row-x" onclick="del('kosten','${x.id}')">×</button>
+    </div>`).join('');
+}
+
+function renderMaterial(){
+  const list=data.material;
+  const el=document.getElementById('materialList');
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Kein Material</b>Halte fest, was geplant, bestellt oder schon geliefert ist.</div>`; return; }
+  const tagFor=s=>s==='geliefert'?'<span class="tag on">Geliefert</span>':s==='bestellt'?'<span class="tag mid">Bestellt</span>':'<span class="tag">Geplant</span>';
+  const order={geplant:0,bestellt:1,geliefert:2};
+  el.innerHTML=[...list].sort((a,b)=>order[a.status]-order[b.status]).map(x=>`
+    <div class="item">
+      <div class="grow">
+        <div class="t1">${esc(x.bezeichnung)}${x.menge?` <span style="color:var(--ink-soft);font-weight:400">· ${esc(x.menge)}</span>`:''}</div>
+        ${x.notiz?`<div class="t2">${esc(x.notiz)}</div>`:''}
+      </div>
+      <button onclick="cycleMaterial('${x.id}')" style="border:none;background:none">${tagFor(x.status)}</button>
+      <button class="row-x" onclick="del('material','${x.id}')">×</button>
+    </div>`).join('');
+}
+function cycleMaterial(id){
+  const m=data.material.find(x=>x.id===id); if(!m) return;
+  m.status = m.status==='geplant'?'bestellt':m.status==='bestellt'?'geliefert':'geplant';
+  persist(); renderMaterial();
+}
+
+function renderTermine(){
+  const list=[...data.termine].sort((a,b)=>a.datum.localeCompare(b.datum));
+  const el=document.getElementById('termineList');
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Termine</b>Lieferungen, Handwerker, Abnahmen — alles an einem Ort.</div>`; return; }
+  const t0=today();
+  el.innerHTML=list.map(x=>`
+    <div class="item">
+      <span class="datechip" ${x.datum<t0?'style="opacity:.5"':''}>${fmtDate(x.datum)}</span>
+      <div class="grow">
+        <div class="t1">${esc(x.titel)}</div>
+        ${x.notiz?`<div class="t2">${esc(x.notiz)}</div>`:''}
+      </div>
+      ${x.datum<t0?'<span class="tag">vorbei</span>':''}
+      <button class="row-x" onclick="del('termine','${x.id}')">×</button>
+    </div>`).join('');
+}
+
+function renderMaengel(){
+  const list=[...data.maengel].sort((a,b)=>(a.status==='erledigt')-(b.status==='erledigt'));
+  const el=document.getElementById('maengelList');
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Mängel</b>Notiere Punkte, die noch nachgebessert werden müssen.</div>`; return; }
+  el.innerHTML=list.map(x=>`
+    <div class="item">
+      <button onclick="toggleMangel('${x.id}')" style="flex:none;width:22px;height:22px;border:1.5px solid ${x.status==='erledigt'?'var(--accent)':'var(--line-strong)'};border-radius:3px;background:${x.status==='erledigt'?'var(--accent)':'#fff'};color:#fff;font-size:14px;line-height:1;">${x.status==='erledigt'?'✓':''}</button>
+      <div class="grow">
+        <div class="t1" style="${x.status==='erledigt'?'text-decoration:line-through;color:var(--ink-soft)':''}">${esc(x.beschreibung)}</div>
+        ${x.ort?`<div class="t2">${esc(x.ort)}</div>`:''}
+      </div>
+      <button class="row-x" onclick="del('maengel','${x.id}')">×</button>
+    </div>`).join('');
+}
+function toggleMangel(id){
+  const m=data.maengel.find(x=>x.id===id); if(!m) return;
+  m.status = m.status==='erledigt'?'offen':'erledigt';
+  persist(); renderMaengel(); renderDash();
+}
+
+function renderTagebuch(){
+  const list=[...data.tagebuch].sort((a,b)=>b.datum.localeCompare(a.datum));
+  const el=document.getElementById('tagebuchList');
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Leeres Tagebuch</b>Wer war da, was lief, was ist aufgefallen — der erste Eintrag wartet.</div>`; return; }
+  el.innerHTML=list.map(x=>`
+    <div class="card"><div class="card-b">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
+        <span class="datechip">${fmtDate(x.datum)}</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${x.wetter?`<span class="tag">${esc(x.wetter)}</span>`:''}
+          <button class="row-x" onclick="del('tagebuch','${x.id}')">×</button>
+        </div>
+      </div>
+      <div style="font-size:14px;white-space:pre-wrap;line-height:1.5">${esc(x.text)}</div>
+    </div></div>`).join('');
+}
+
+function renderBilder(){
+  const el=document.getElementById('bilderGrid');
+  if(!data.bilder.length){ el.innerHTML=`<div class="empty"><b>Keine Fotos</b>Ein Foto pro Bauabschnitt ergibt später einen schönen Vorher-Nachher-Verlauf.</div>`; return; }
+  const list=[...data.bilder].sort((a,b)=>b.datum.localeCompare(a.datum));
+  el.innerHTML=`<div class="photo-grid">`+list.map(x=>`
+    <div class="photo">
+      <button class="del" onclick="delPhoto('${x.id}')">×</button>
+      <img src="${esc(x.url||'')}" alt="${esc(x.titel)}" loading="lazy">
+      <div class="cap"><div class="t1">${esc(x.titel)||'Ohne Titel'}</div>
+        <div class="t2">${fmtDate(x.datum)}${x.phase?' · '+esc(x.phase):''}</div></div>
+    </div>`).join('')+`</div>`;
+}
+
+function renderKontakte(){
+  const el=document.getElementById('kontakteList');
+  if(!data.kontakte.length){ el.innerHTML=`<div class="empty"><b>Keine Kontakte</b>Handwerker, Architekt, Lieferanten — griffbereit an einem Ort.</div>`; return; }
+  el.innerHTML=data.kontakte.map(x=>`
+    <div class="item">
+      <div class="grow">
+        <div class="t1">${esc(x.name)}</div>
+        <div class="t2">${esc(x.rolle)||''}${x.telefon?' · '+esc(x.telefon):''}${x.notiz?' · '+esc(x.notiz):''}</div>
+      </div>
+      ${x.telefon?`<a class="btn ghost sm" href="tel:${esc(x.telefon)}">Anruf</a>`:''}
+      <button class="row-x" onclick="del('kontakte','${x.id}')">×</button>
+    </div>`).join('');
+}
+
+function renderSetup(){
+  const m=data.meta;
+  document.getElementById('setupBody').innerHTML=`
+    <label class="f"><span class="lab">Projektname</span><input id="s_proj" value="${esc(m.projekt)}"></label>
+    <label class="f"><span class="lab">Ort</span><input id="s_ort" value="${esc(m.ort)}"></label>
+    <div class="two">
+      <label class="f"><span class="lab">Budget (€)</span><input id="s_budget" type="number" inputmode="numeric" value="${m.budget||''}"></label>
+      <label class="f"><span class="lab">Stundensatz (€/h)</span><input id="s_satz" type="number" inputmode="numeric" value="${m.stundensatz||''}"></label>
+    </div>
+    <label class="f"><span class="lab">Personen (Komma-getrennt)</span><input id="s_pers" value="${esc(data.personen.join(', '))}"></label>
+    <button class="btn block" onclick="saveSetup()">Speichern</button>
+    <p style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:14px;letter-spacing:.03em;line-height:1.6">
+      Der Stundensatz bestimmt den Wert eurer Eigenleistung (Muskelhypothek).<br>
+      Daten liegen im gemeinsamen Speicher — Isabella & Thomas sehen dieselbe Bauakte.
+    </p>`;
+}
+function saveSetup(){
+  data.meta.projekt=document.getElementById('s_proj').value.trim()||'Unser Eigenheim';
+  data.meta.ort=document.getElementById('s_ort').value.trim();
+  data.meta.budget=+document.getElementById('s_budget').value||0;
+  data.meta.stundensatz=+document.getElementById('s_satz').value||0;
+  const pers=document.getElementById('s_pers').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(pers.length) data.personen=pers;
+  persist(); renderAll(); toast('Projekt gespeichert');
+}
+
+/* ---------- generic delete ---------- */
+function del(coll,id){
+  data[coll]=data[coll].filter(x=>x.id!==id);
+  persist(); renderAll();
+}
+async function delPhoto(id){
+  data.bilder=data.bilder.filter(x=>x.id!==id);
+  await cloud.deletePhoto(id);
+  persist(); renderBilder();
+}
+
+/* ============================================================
+   SHEETS (Formulare)
+   ============================================================ */
+const backdrop=document.getElementById('backdrop'), sheet=document.getElementById('sheet');
+function closeSheet(){ backdrop.classList.remove('open'); sheet.innerHTML=''; }
+backdrop.addEventListener('click',e=>{ if(e.target===backdrop) closeSheet(); });
+function openSheet(title,bodyHTML){
+  sheet.innerHTML=`<div class="sheet-h"><h3>${title}</h3><button class="row-x" style="font-size:26px" onclick="closeSheet()">×</button></div><div class="sheet-b">${bodyHTML}</div>`;
+  backdrop.classList.add('open');
+}
+function personOptions(sel){
+  return data.personen.map(p=>`<button type="button" class="${p===sel?'sel':''}" data-person="${esc(p)}" onclick="pickPerson(this)">${esc(p)}</button>`).join('');
+}
+let pickedPerson=null;
+function pickPerson(btn){
+  pickedPerson=btn.dataset.person;
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function openStunden(){
+  pickedPerson=data.personen[0]||'';
+  openSheet('Stunden erfassen',`
+    <label class="f"><span class="lab">Person</span><div class="seg" id="segPerson">${personOptions(pickedPerson)}</div></label>
+    <div class="two">
+      <label class="f"><span class="lab">Datum</span><input id="st_datum" type="date" value="${today()}"></label>
+      <label class="f"><span class="lab">Stunden</span><input id="st_h" type="number" inputmode="decimal" step="0.5" placeholder="z. B. 6"></label>
+    </div>
+    <label class="f"><span class="lab">Tätigkeit</span><input id="st_tat" placeholder="z. B. Schalung, Estrich, aufräumen"></label>
+    <button class="btn block" onclick="saveStunden()">Eintragen</button>`);
+}
+function saveStunden(){
+  const h=+document.getElementById('st_h').value;
+  if(!h){ toast('Stundenzahl fehlt'); return; }
+  data.stunden.push({id:uid(),datum:document.getElementById('st_datum').value||today(),
+    person:pickedPerson||data.personen[0]||'—',
+    taetigkeit:document.getElementById('st_tat').value.trim(), stunden:h});
+  persist(pickedPerson); closeSheet(); renderAll(); toast('Stunden eingetragen');
+}
+
+function openKosten(){
+  openSheet('Beleg erfassen',`
+    <div class="two">
+      <label class="f"><span class="lab">Datum</span><input id="k_datum" type="date" value="${today()}"></label>
+      <label class="f"><span class="lab">Betrag (€)</span><input id="k_betrag" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></label>
+    </div>
+    <label class="f"><span class="lab">Bezeichnung</span><input id="k_bez" placeholder="z. B. Beton, Dachziegel, Miete Bagger"></label>
+    <label class="f"><span class="lab">Kategorie</span>
+      <select id="k_kat">
+        <option>Material</option><option>Werkzeug/Miete</option><option>Handwerker</option>
+        <option>Gebühren/Amt</option><option>Sonstiges</option>
+      </select></label>
+    <button class="btn block" onclick="saveKosten()">Erfassen</button>`);
+}
+function saveKosten(){
+  const b=+document.getElementById('k_betrag').value;
+  const bez=document.getElementById('k_bez').value.trim();
+  if(!b||!bez){ toast('Betrag & Bezeichnung nötig'); return; }
+  data.kosten.push({id:uid(),datum:document.getElementById('k_datum').value||today(),
+    betrag:b,bezeichnung:bez,kategorie:document.getElementById('k_kat').value});
+  persist(); closeSheet(); renderAll(); toast('Beleg erfasst');
+}
+
+function openMaterial(){
+  openSheet('Material hinzufügen',`
+    <label class="f"><span class="lab">Bezeichnung</span><input id="m_bez" placeholder="z. B. Kalksandstein 17,5"></label>
+    <label class="f"><span class="lab">Menge (optional)</span><input id="m_menge" placeholder="z. B. 8 Paletten"></label>
+    <label class="f"><span class="lab">Status</span>
+      <select id="m_status"><option value="geplant">Geplant</option><option value="bestellt">Bestellt</option><option value="geliefert">Geliefert</option></select></label>
+    <label class="f"><span class="lab">Notiz (optional)</span><input id="m_notiz" placeholder="Lieferant, Termin …"></label>
+    <button class="btn block" onclick="saveMaterial()">Hinzufügen</button>`);
+}
+function saveMaterial(){
+  const bez=document.getElementById('m_bez').value.trim();
+  if(!bez){ toast('Bezeichnung fehlt'); return; }
+  data.material.push({id:uid(),bezeichnung:bez,menge:document.getElementById('m_menge').value.trim(),
+    status:document.getElementById('m_status').value,notiz:document.getElementById('m_notiz').value.trim()});
+  persist(); closeSheet(); renderMaterial(); toast('Material hinzugefügt');
+}
+
+function openTermin(){
+  openSheet('Termin hinzufügen',`
+    <label class="f"><span class="lab">Datum</span><input id="t_datum" type="date" value="${today()}"></label>
+    <label class="f"><span class="lab">Titel</span><input id="t_titel" placeholder="z. B. Betonlieferung, Rohbauabnahme"></label>
+    <label class="f"><span class="lab">Notiz (optional)</span><input id="t_notiz" placeholder="Uhrzeit, Details …"></label>
+    <button class="btn block" onclick="saveTermin()">Hinzufügen</button>`);
+}
+function saveTermin(){
+  const titel=document.getElementById('t_titel').value.trim();
+  if(!titel){ toast('Titel fehlt'); return; }
+  data.termine.push({id:uid(),datum:document.getElementById('t_datum').value||today(),
+    titel,notiz:document.getElementById('t_notiz').value.trim()});
+  persist(); closeSheet(); renderTermine(); renderDash(); toast('Termin hinzugefügt');
+}
+
+function openMangel(){
+  openSheet('Mangel notieren',`
+    <label class="f"><span class="lab">Beschreibung</span><input id="mg_besch" placeholder="z. B. Fuge Bad undicht"></label>
+    <label class="f"><span class="lab">Ort (optional)</span><input id="mg_ort" placeholder="z. B. Bad OG"></label>
+    <button class="btn block" onclick="saveMangel()">Notieren</button>`);
+}
+function saveMangel(){
+  const b=document.getElementById('mg_besch').value.trim();
+  if(!b){ toast('Beschreibung fehlt'); return; }
+  data.maengel.push({id:uid(),beschreibung:b,ort:document.getElementById('mg_ort').value.trim(),status:'offen'});
+  persist(); closeSheet(); renderMaengel(); renderDash(); toast('Mangel notiert');
+}
+
+function openTagebuch(){
+  openSheet('Tagebucheintrag',`
+    <div class="two">
+      <label class="f"><span class="lab">Datum</span><input id="tb_datum" type="date" value="${today()}"></label>
+      <label class="f"><span class="lab">Wetter (optional)</span><input id="tb_wetter" placeholder="z. B. sonnig, 24°"></label>
+    </div>
+    <label class="f"><span class="lab">Was ist passiert?</span><textarea id="tb_text" placeholder="Wer war da, was wurde geschafft, Besonderheiten …"></textarea></label>
+    <button class="btn block" onclick="saveTagebuch()">Speichern</button>`);
+}
+function saveTagebuch(){
+  const t=document.getElementById('tb_text').value.trim();
+  if(!t){ toast('Text fehlt'); return; }
+  data.tagebuch.push({id:uid(),datum:document.getElementById('tb_datum').value||today(),
+    text:t,wetter:document.getElementById('tb_wetter').value.trim()});
+  persist(); closeSheet(); renderTagebuch(); renderDash(); toast('Eintrag gespeichert');
+}
+
+function openKontakt(){
+  openSheet('Kontakt hinzufügen',`
+    <label class="f"><span class="lab">Name</span><input id="c_name" placeholder="z. B. Fa. Huber"></label>
+    <label class="f"><span class="lab">Rolle</span><input id="c_rolle" placeholder="z. B. Elektriker, Architekt"></label>
+    <label class="f"><span class="lab">Telefon (optional)</span><input id="c_tel" type="tel" placeholder="0170 …"></label>
+    <label class="f"><span class="lab">Notiz (optional)</span><input id="c_notiz"></label>
+    <button class="btn block" onclick="saveKontakt()">Hinzufügen</button>`);
+}
+function saveKontakt(){
+  const n=document.getElementById('c_name').value.trim();
+  if(!n){ toast('Name fehlt'); return; }
+  data.kontakte.push({id:uid(),name:n,rolle:document.getElementById('c_rolle').value.trim(),
+    telefon:document.getElementById('c_tel').value.trim(),notiz:document.getElementById('c_notiz').value.trim()});
+  persist(); closeSheet(); renderKontakte(); toast('Kontakt hinzugefügt');
+}
+
+/* ---------- photo upload (compressed) ---------- */
+function handlePhoto(ev){
+  const file=ev.target.files[0]; ev.target.value='';
+  if(!file) return;
+  toast('Bild wird verarbeitet …');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=1400;
+      let {width:w,height:h}=img;
+      if(w>max||h>max){ const r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      const preview=c.toDataURL('image/jpeg',0.72);
+      c.toBlob(blob=>askPhotoMeta(preview, blob), 'image/jpeg', 0.72);
+    };
+    img.onerror=()=>toast('Bild konnte nicht gelesen werden');
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+let pendingBlob=null, pendingPreview=null;
+function askPhotoMeta(preview, blob){
+  pendingPreview=preview; pendingBlob=blob;
+  const phaseOpts=['',...data.phasen.map(p=>p.name)].map(n=>`<option value="${esc(n)}">${n?esc(n):'— keine —'}</option>`).join('');
+  openSheet('Foto beschriften',`
+    <div style="border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px;background:var(--paper)">
+      <img src="${preview}" style="width:100%;display:block;max-height:230px;object-fit:contain">
+    </div>
+    <label class="f"><span class="lab">Titel</span><input id="ph_titel" placeholder="z. B. Bodenplatte fertig"></label>
+    <div class="two">
+      <label class="f"><span class="lab">Datum</span><input id="ph_datum" type="date" value="${today()}"></label>
+      <label class="f"><span class="lab">Phase</span><select id="ph_phase">${phaseOpts}</select></label>
+    </div>
+    <button class="btn block" onclick="savePhoto()">Foto speichern</button>`);
+}
+async function savePhoto(){
+  if(!pendingBlob) return;
+  const id=uid();
+  toast('Foto wird hochgeladen …');
+  const url=await cloud.uploadPhoto(id, pendingBlob);
+  if(!url){ toast('Upload fehlgeschlagen — online?'); return; }
+  data.bilder.push({id, url, titel:document.getElementById('ph_titel').value.trim(),
+    datum:document.getElementById('ph_datum').value||today(),
+    phase:document.getElementById('ph_phase').value});
+  pendingBlob=null; pendingPreview=null;
+  persist(); closeSheet(); renderBilder(); toast('Foto gespeichert');
+}
+
+/* ---------- toast ---------- */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+const NAV=[
+  ['dash','Start','M3 11 12 4l9 7M5 10v9h14v-9'],
+  ['stunden','Stunden','M12 6v6l4 2M12 21a9 9 0 100-18 9 9 0 000 18z'],
+  ['fortschritt','Bau','M3 21h18M6 21V9l6-4 6 4v12M10 21v-5h4v5'],
+  ['kosten','Kosten','M12 3v18M7 7h7a3 3 0 010 6H7m10 0h-7a3 3 0 000 6h8'],
+  ['material','Material','M3 8l9-5 9 5-9 5-9-5zM3 8v8l9 5 9-5V8'],
+  ['termine','Termine','M4 6h16v14H4zM4 10h16M8 3v4M16 3v4'],
+  ['maengel','Mängel','M12 9v4M12 17h.01M10.3 4.3 2.5 18a1.5 1.5 0 001.3 2.2h16.4a1.5 1.5 0 001.3-2.2L13.7 4.3a1.5 1.5 0 00-2.6 0z'],
+  ['tagebuch','Journal','M6 3h11a2 2 0 012 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z'],
+  ['bilder','Fotos','M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6'],
+  ['kontakte','Kontakte','M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z'],
+  ['setup','Projekt','M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 00-1.7-1l-.3-2.5H9.4l-.3 2.5a7 7 0 00-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 000 2l-2 1.5 2 3.4 2.3-1a7 7 0 001.7 1l.3 2.5h5.2l.3-2.5a7 7 0 001.7-1l2.3 1 2-3.4-2-1.5a7 7 0 00.1-1z']
+];
+function buildNav(){
+  document.getElementById('nav').innerHTML=NAV.map(([id,lab,path])=>`
+    <button data-view="${id}" onclick="go('${id}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>
+      <span class="nlab">${lab}</span>
+    </button>`).join('');
+}
+function go(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+id).classList.add('active');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function init(){
+  buildNav();
+  const {data:remote, ts} = await cloud.loadData();
+  if(remote){ data=fillGaps(remote); localTs=ts; }
+  else { data=blankData(); }
+  renderAll();
+  go('dash');
+  // Abgleich zwischen den Geräten: beim Zurückkehren zur App + regelmäßig
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pullRemote(); });
+  setInterval(()=>{ if(!document.hidden) pullRemote(); }, 15000);
+})();
+</script>
+</body>
+</html>

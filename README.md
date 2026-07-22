@@ -11,7 +11,9 @@ Supabase, sodass sie auf mehreren Geräten dieselben Einträge zeigt.
 ## Dateien
 
 - `index.html` — die komplette App
-- `supabase-setup.sql` — richtet Tabelle, Zugriffsregeln und Foto-Ordner ein
+- `manifest.webmanifest`, `sw.js` — machen die App installierbar (PWA)
+- `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `favicon-32.png` — App-Icons
+- `supabase-setup.sql` — Tabelle, Rollen/Zugriffsregeln und Foto-Ordner
 - `.gitignore`
 
 ## Einrichtung
@@ -65,19 +67,37 @@ erscheinen sie beim Öffnen bzw. Zurückwechseln zur App und ansonsten
 spätestens nach etwa 15 Sekunden, solange die App offen ist. Bei
 gleichzeitigem Bearbeiten gilt: Der zuletzt gespeicherte Stand gewinnt.
 
-## Sicherheit — bitte lesen
+## Als App installieren (PWA)
+
+Die App ist installierbar wie die Wetter-App. Nach dem Hosten die
+Pages-Adresse im Browser öffnen und:
+
+- **Android/Chrome:** Menü (⋮) → „App installieren" bzw. „Zum Startbildschirm".
+- **iOS/Safari:** Teilen-Symbol → „Zum Home-Bildschirm".
+
+Danach liegt die Bauakte mit eigenem Icon als App auf dem Startbildschirm
+und startet im Vollbild. Dafür sorgen `manifest.webmanifest`, `sw.js` und
+die Icon-Dateien — sie müssen im selben Ordner wie `index.html` liegen.
+
+## Sicherheit & Rollen — bitte lesen
 
 Die App ist durch einen **Login** geschützt: Daten und Fotos sind nur für
-angemeldete Nutzer sichtbar (Regel `nur_eingeloggt` und die
-`authenticated`-Regeln für den Foto-Ordner in `supabase-setup.sql`).
+angemeldete Nutzer sichtbar und werden durch die Regeln in
+`supabase-setup.sql` serverseitig abgesichert.
+
+Es gibt zwei Rollen:
+
+- **Voller Zugriff:** `isabella2`, `tommy2` — lesen und bearbeiten.
+- **Nur Lesen:** `heeeelper` — sieht alles, kann aber nichts anlegen,
+  ändern oder löschen. Das ist in der App (ausgeblendete Buttons) *und*
+  serverseitig in den Zugriffsregeln erzwungen.
 
 **Nutzer anlegen** im Supabase-Dashboard unter *Authentication → Users →
 Add user*: als E-Mail `<benutzername>@hausakte.local` eintragen, ein
 Passwort setzen und **Auto Confirm User** anhaken. Beim Login in der App
 wird nur der Benutzername eingegeben — das `@hausakte.local` hängt die App
 automatisch an. Unter *Authentication → Providers → Email* sollte
-**„Allow new users to sign up" ausgeschaltet** sein, damit sich niemand
-selbst registrieren kann.
+**„Allow new users to sign up" ausgeschaltet** sein.
 
 **Fotos:** Der Bucket `fotos` sollte auf **Private** stehen. Die App lädt
 Bilder über zeitlich begrenzte, signierte Links — öffentlich erreichbar

@@ -8,6 +8,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1E2621">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bauakte">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
   :root{
     --paper:#E7E9E2;
@@ -352,6 +361,11 @@
   }
   .login-err.show{display:block;}
 
+  /* Nur-Lese-Modus (Helfer) */
+  body.ro .add-row, body.ro .row-x, body.ro .del{ display:none !important; }
+  body.ro .item button, body.ro .phase .cyc{ pointer-events:none; opacity:.55; }
+  #roBanner{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent-deep); }
+
   @media(min-width:620px){
     .dash{grid-template-columns:1fr 1fr 1fr;}
     .dash .heroCard{grid-column:span 2;}
@@ -370,7 +384,7 @@
     <h2>Bauakte</h2>
     <div class="sub">Anmeldung</div>
     <div class="login-err" id="loginErr"></div>
-    <label class="f"><span class="lab">Benutzername</span><input id="lg_user" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="z. B. tommy2"></label>
+    <label class="f"><span class="lab">Benutzername</span><input id="lg_user" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Benutzername"></label>
     <label class="f"><span class="lab">Passwort</span><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••"></label>
     <button class="btn block" id="lg_btn" onclick="doLogin()">Anmelden</button>
   </div>
@@ -397,6 +411,9 @@
 <main>
   <div id="storageBanner" class="banner" style="display:none">
     ⚠︎ Speicher nicht verfügbar — Eingaben bleiben nur bis zum Schließen erhalten.
+  </div>
+  <div id="roBanner" class="banner" style="display:none">
+    Nur-Lese-Zugang — du kannst alles sehen, aber nichts ändern.
   </div>
 
   <!-- ÜBERSICHT -->
@@ -567,6 +584,7 @@ const blankData = () => ({
 
 let saveTimer=null, saving=false, localTs=null;
 function persist(who){
+  if(READONLY) return;
   if(who!==undefined){ data.meta.lastBy=who; }
   data.meta.lastAt = new Date().toISOString();
   clearTimeout(saveTimer);
@@ -774,6 +792,7 @@ function renderPhases(){
     </div>`).join('');
 }
 function cyclePhase(id){
+  if(READONLY){ toast('Nur-Lese-Zugang'); return; }
   const p=data.phasen.find(x=>x.id===id); if(!p) return;
   p.status = p.status==='offen'?'laufend':p.status==='laufend'?'fertig':'offen';
   persist(); renderPhases(); renderDash();
@@ -825,6 +844,7 @@ function renderMaterial(){
     </div>`).join('');
 }
 function cycleMaterial(id){
+  if(READONLY){ toast('Nur-Lese-Zugang'); return; }
   const m=data.material.find(x=>x.id===id); if(!m) return;
   m.status = m.status==='geplant'?'bestellt':m.status==='bestellt'?'geliefert':'geplant';
   persist(); renderMaterial();
@@ -862,6 +882,7 @@ function renderMaengel(){
     </div>`).join('');
 }
 function toggleMangel(id){
+  if(READONLY){ toast('Nur-Lese-Zugang'); return; }
   const m=data.maengel.find(x=>x.id===id); if(!m) return;
   m.status = m.status==='erledigt'?'offen':'erledigt';
   persist(); renderMaengel(); renderDash();
@@ -937,6 +958,7 @@ function renderSetup(){
     </p>`;
 }
 function saveSetup(){
+  if(READONLY){ toast('Nur-Lese-Zugang'); return; }
   data.meta.projekt=document.getElementById('s_proj').value.trim()||'Unser Eigenheim';
   data.meta.ort=document.getElementById('s_ort').value.trim();
   data.meta.budget=+document.getElementById('s_budget').value||0;
@@ -948,6 +970,7 @@ function saveSetup(){
 
 /* ---------- generic delete ---------- */
 function del(coll,id){
+  if(READONLY) return;
   data[coll]=data[coll].filter(x=>x.id!==id);
   persist(); renderAll();
 }
@@ -1208,7 +1231,9 @@ function go(id){
    ============================================================ */
 const EMAIL_DOMAIN='@hausakte.local';
 const USER_LABELS={ 'isabella2':'Isabella', 'tommy2':'Thomas', 'heeeelper':'Helfer' };
+const READONLY_USERS=['heeeelper'];
 let currentUser='';
+let READONLY=false;
 let appStarted=false;
 
 function showLogin(){ document.getElementById('login').classList.add('show'); }
@@ -1226,6 +1251,7 @@ async function doLogin(){
   if(error){ err.textContent='Anmeldung fehlgeschlagen. Name oder Passwort stimmt nicht.'; err.classList.add('show'); return; }
   err.classList.remove('show');
   currentUser=USER_LABELS[u]||u;
+  READONLY=READONLY_USERS.includes(u);
   hideLogin();
   startApp();
 }
@@ -1237,6 +1263,8 @@ async function doLogout(){
 async function startApp(){
   if(appStarted) return;
   appStarted=true;
+  document.body.classList.toggle('ro', READONLY);
+  document.getElementById('roBanner').style.display = READONLY ? 'block' : 'none';
   buildNav();
   const {data:remote, ts} = await cloud.loadData();
   if(remote){ data=fillGaps(remote); localTs=ts; }
@@ -1257,11 +1285,17 @@ async function startApp(){
   if(session){
     const u=(session.user.email||'').split('@')[0];
     currentUser=USER_LABELS[u]||u;
+    READONLY=READONLY_USERS.includes(u);
     startApp();
   } else {
     showLogin();
   }
 })();
+</script>
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  }
 </script>
 </body>
 </html>

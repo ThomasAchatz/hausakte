@@ -304,6 +304,54 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
 
+  /* nav scroll affordance */
+  .navfade{
+    position:fixed;bottom:0;height:57px;width:28px;z-index:61;pointer-events:none;
+    transition:opacity .2s;opacity:0;
+  }
+  .navfade.l{left:0;background:linear-gradient(90deg,var(--card) 30%,transparent);}
+  .navfade.r{right:0;background:linear-gradient(270deg,var(--card) 30%,transparent);}
+  .navfade.show{opacity:1;}
+  .navfade.r::after{
+    content:"›";position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    color:var(--accent);font-size:19px;font-weight:700;line-height:1;
+  }
+  .navfade.l::after{
+    content:"‹";position:absolute;left:6px;top:50%;transform:translateY(-50%);
+    color:var(--accent);font-size:19px;font-weight:700;line-height:1;
+  }
+
+  /* login screen */
+  #login{
+    position:fixed;inset:0;z-index:300;display:none;
+    align-items:center;justify-content:center;padding:22px;
+    background:var(--ink);
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:14px 14px;
+  }
+  #login.show{display:flex;}
+  .login-card{
+    width:100%;max-width:340px;background:var(--paper-2);
+    border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:6px;
+    padding:28px 22px 24px;box-shadow:0 16px 50px rgba(0,0,0,.4);
+  }
+  .login-card .glyph{width:42px;height:42px;margin:0 auto 14px;border-color:var(--accent);}
+  .login-card .glyph svg{width:26px;height:26px;}
+  .login-card h2{
+    font-family:var(--font-display);text-transform:uppercase;text-align:center;
+    font-size:24px;letter-spacing:.05em;font-weight:600;line-height:1;
+  }
+  .login-card .sub{
+    text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-soft);margin:4px 0 20px;
+  }
+  .login-err{
+    display:none;background:var(--signal-soft);border:1px solid var(--signal);color:var(--signal);
+    font-family:var(--font-mono);font-size:11px;padding:8px 10px;border-radius:var(--radius);
+    margin-bottom:13px;text-align:center;line-height:1.4;
+  }
+  .login-err.show{display:block;}
+
   @media(min-width:620px){
     .dash{grid-template-columns:1fr 1fr 1fr;}
     .dash .heroCard{grid-column:span 2;}
@@ -311,6 +359,22 @@
 </style>
 </head>
 <body>
+
+<div id="login">
+  <div class="login-card">
+    <div class="glyph" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2C5D63" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/>
+      </svg>
+    </div>
+    <h2>Bauakte</h2>
+    <div class="sub">Anmeldung</div>
+    <div class="login-err" id="loginErr"></div>
+    <label class="f"><span class="lab">Benutzername</span><input id="lg_user" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="z. B. tommy2"></label>
+    <label class="f"><span class="lab">Passwort</span><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••"></label>
+    <button class="btn block" id="lg_btn" onclick="doLogin()">Anmelden</button>
+  </div>
+</div>
 
 <header>
   <div class="titleblock">
@@ -419,11 +483,13 @@
 <div class="toast" id="toast"></div>
 
 <nav id="nav"></nav>
+<div class="navfade l" id="navFadeL"></div>
+<div class="navfade r" id="navFadeR"></div>
 
 <script>
 /* ============================================================
    BAUAKTE — Bau-Cockpit für Eigenleistung
-   Speicher: window.storage (shared), Fallback: In-Memory
+   Speicher: Supabase (Datenbank + Foto-Ordner), Login via Supabase Auth
    ============================================================ */
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -467,11 +533,14 @@ const cloud = {
     return ts;
   },
   async uploadPhoto(id, blob){
+    if(!sb) return false;
+    const {error} = await sb.storage.from(BUCKET).upload(id+'.jpg', blob, {contentType:'image/jpeg', upsert:true});
+    return !error;
+  },
+  async signedUrl(id){
     if(!sb) return null;
-    const path=id+'.jpg';
-    const {error} = await sb.storage.from(BUCKET).upload(path, blob, {contentType:'image/jpeg', upsert:true});
-    if(error){ return null; }
-    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    const {data, error} = await sb.storage.from(BUCKET).createSignedUrl(id+'.jpg', 3600);
+    return error ? null : data.signedUrl;
   },
   async deletePhoto(id){
     if(!sb) return;
@@ -815,17 +884,22 @@ function renderTagebuch(){
     </div></div>`).join('');
 }
 
-function renderBilder(){
+async function renderBilder(){
   const el=document.getElementById('bilderGrid');
   if(!data.bilder.length){ el.innerHTML=`<div class="empty"><b>Keine Fotos</b>Ein Foto pro Bauabschnitt ergibt später einen schönen Vorher-Nachher-Verlauf.</div>`; return; }
   const list=[...data.bilder].sort((a,b)=>b.datum.localeCompare(a.datum));
   el.innerHTML=`<div class="photo-grid">`+list.map(x=>`
     <div class="photo">
       <button class="del" onclick="delPhoto('${x.id}')">×</button>
-      <img src="${esc(x.url||'')}" alt="${esc(x.titel)}" loading="lazy">
+      <img id="img-${x.id}" alt="${esc(x.titel)}" loading="lazy">
       <div class="cap"><div class="t1">${esc(x.titel)||'Ohne Titel'}</div>
         <div class="t2">${fmtDate(x.datum)}${x.phase?' · '+esc(x.phase):''}</div></div>
     </div>`).join('')+`</div>`;
+  for(const x of list){
+    const url = await cloud.signedUrl(x.id);
+    const img=document.getElementById('img-'+x.id);
+    if(img && url) img.src=url;
+  }
 }
 
 function renderKontakte(){
@@ -853,9 +927,13 @@ function renderSetup(){
     </div>
     <label class="f"><span class="lab">Personen (Komma-getrennt)</span><input id="s_pers" value="${esc(data.personen.join(', '))}"></label>
     <button class="btn block" onclick="saveSetup()">Speichern</button>
-    <p style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:14px;letter-spacing:.03em;line-height:1.6">
+    <div style="margin-top:20px;padding-top:15px;border-top:1px solid var(--line)">
+      <div class="eyebrow" style="margin-bottom:8px">Angemeldet als ${esc(currentUser||'—')}</div>
+      <button class="btn ghost block" onclick="doLogout()">Abmelden</button>
+    </div>
+    <p style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:16px;letter-spacing:.03em;line-height:1.6">
       Der Stundensatz bestimmt den Wert eurer Eigenleistung (Muskelhypothek).<br>
-      Daten liegen im gemeinsamen Speicher — Isabella & Thomas sehen dieselbe Bauakte.
+      Daten und Fotos sind nur für angemeldete Personen sichtbar.
     </p>`;
 }
 function saveSetup(){
@@ -895,6 +973,7 @@ function personOptions(sel){
 let pickedPerson=null;
 function pickPerson(btn){
   pickedPerson=btn.dataset.person;
+  const neu=document.getElementById('st_neu'); if(neu) neu.value='';
   btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
 }
@@ -903,6 +982,7 @@ function openStunden(){
   pickedPerson=data.personen[0]||'';
   openSheet('Stunden erfassen',`
     <label class="f"><span class="lab">Person</span><div class="seg" id="segPerson">${personOptions(pickedPerson)}</div></label>
+    <label class="f"><span class="lab">… oder neuer Helfer</span><input id="st_neu" autocapitalize="words" placeholder="Name eintippen (Familie, Freunde)" oninput="if(this.value){pickedPerson=null;document.querySelectorAll('#segPerson button').forEach(b=>b.classList.remove('sel'));}"></label>
     <div class="two">
       <label class="f"><span class="lab">Datum</span><input id="st_datum" type="date" value="${today()}"></label>
       <label class="f"><span class="lab">Stunden</span><input id="st_h" type="number" inputmode="decimal" step="0.5" placeholder="z. B. 6"></label>
@@ -913,10 +993,12 @@ function openStunden(){
 function saveStunden(){
   const h=+document.getElementById('st_h').value;
   if(!h){ toast('Stundenzahl fehlt'); return; }
+  const neu=(document.getElementById('st_neu').value||'').trim();
+  const person = neu || pickedPerson || data.personen[0] || '—';
+  if(neu && !data.personen.includes(neu)) data.personen.push(neu);
   data.stunden.push({id:uid(),datum:document.getElementById('st_datum').value||today(),
-    person:pickedPerson||data.personen[0]||'—',
-    taetigkeit:document.getElementById('st_tat').value.trim(), stunden:h});
-  persist(pickedPerson); closeSheet(); renderAll(); toast('Stunden eingetragen');
+    person, taetigkeit:document.getElementById('st_tat').value.trim(), stunden:h});
+  persist(person); closeSheet(); renderAll(); toast('Stunden eingetragen');
 }
 
 function openKosten(){
@@ -1061,9 +1143,9 @@ async function savePhoto(){
   if(!pendingBlob) return;
   const id=uid();
   toast('Foto wird hochgeladen …');
-  const url=await cloud.uploadPhoto(id, pendingBlob);
-  if(!url){ toast('Upload fehlgeschlagen — online?'); return; }
-  data.bilder.push({id, url, titel:document.getElementById('ph_titel').value.trim(),
+  const ok=await cloud.uploadPhoto(id, pendingBlob);
+  if(!ok){ toast('Upload fehlgeschlagen — online?'); return; }
+  data.bilder.push({id, titel:document.getElementById('ph_titel').value.trim(),
     datum:document.getElementById('ph_datum').value||today(),
     phase:document.getElementById('ph_phase').value});
   pendingBlob=null; pendingPreview=null;
@@ -1094,23 +1176,67 @@ const NAV=[
   ['setup','Projekt','M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 00-1.7-1l-.3-2.5H9.4l-.3 2.5a7 7 0 00-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 000 2l-2 1.5 2 3.4 2.3-1a7 7 0 001.7 1l.3 2.5h5.2l.3-2.5a7 7 0 001.7-1l2.3 1 2-3.4-2-1.5a7 7 0 00.1-1z']
 ];
 function buildNav(){
-  document.getElementById('nav').innerHTML=NAV.map(([id,lab,path])=>`
+  const nav=document.getElementById('nav');
+  nav.innerHTML=NAV.map(([id,lab,path])=>`
     <button data-view="${id}" onclick="go('${id}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>
       <span class="nlab">${lab}</span>
     </button>`).join('');
+  nav.addEventListener('scroll', updateNavFades, {passive:true});
+  window.addEventListener('resize', updateNavFades);
+  updateNavFades();
+}
+function updateNavFades(){
+  const nav=document.getElementById('nav'); if(!nav) return;
+  const l=document.getElementById('navFadeL'), r=document.getElementById('navFadeR');
+  const maxScroll=nav.scrollWidth-nav.clientWidth-2;
+  if(l) l.classList.toggle('show', nav.scrollLeft>4);
+  if(r) r.classList.toggle('show', nav.scrollLeft<maxScroll);
 }
 function go(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('v-'+id).classList.add('active');
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  const ab=document.querySelector('#nav button[data-view="'+id+'"]');
+  if(ab) ab.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  setTimeout(updateNavFades,350);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ============================================================
-   BOOT
+   AUTH + BOOT
    ============================================================ */
-(async function init(){
+const EMAIL_DOMAIN='@hausakte.local';
+const USER_LABELS={ 'isabella2':'Isabella', 'tommy2':'Thomas', 'heeeelper':'Helfer' };
+let currentUser='';
+let appStarted=false;
+
+function showLogin(){ document.getElementById('login').classList.add('show'); }
+function hideLogin(){ document.getElementById('login').classList.remove('show'); }
+
+async function doLogin(){
+  const err=document.getElementById('loginErr'), btn=document.getElementById('lg_btn');
+  const u=(document.getElementById('lg_user').value||'').trim().toLowerCase();
+  const p=document.getElementById('lg_pass').value||'';
+  if(!u||!p){ err.textContent='Bitte Benutzername und Passwort eingeben.'; err.classList.add('show'); return; }
+  if(!sb){ err.textContent='Keine Verbindung — bist du online?'; err.classList.add('show'); return; }
+  btn.disabled=true; btn.textContent='Anmelden …';
+  const {error}=await sb.auth.signInWithPassword({email:u+EMAIL_DOMAIN, password:p});
+  btn.disabled=false; btn.textContent='Anmelden';
+  if(error){ err.textContent='Anmeldung fehlgeschlagen. Name oder Passwort stimmt nicht.'; err.classList.add('show'); return; }
+  err.classList.remove('show');
+  currentUser=USER_LABELS[u]||u;
+  hideLogin();
+  startApp();
+}
+async function doLogout(){
+  if(sb){ try{ await sb.auth.signOut(); }catch(e){} }
+  location.reload();
+}
+
+async function startApp(){
+  if(appStarted) return;
+  appStarted=true;
   buildNav();
   const {data:remote, ts} = await cloud.loadData();
   if(remote){ data=fillGaps(remote); localTs=ts; }
@@ -1120,6 +1246,21 @@ function go(id){
   // Abgleich zwischen den Geräten: beim Zurückkehren zur App + regelmäßig
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pullRemote(); });
   setInterval(()=>{ if(!document.hidden) pullRemote(); }, 15000);
+}
+
+(async function boot(){
+  const uEl=document.getElementById('lg_user'), pEl=document.getElementById('lg_pass');
+  pEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  uEl.addEventListener('keydown', e=>{ if(e.key==='Enter') pEl.focus(); });
+  if(!sb){ showLogin(); return; }
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){
+    const u=(session.user.email||'').split('@')[0];
+    currentUser=USER_LABELS[u]||u;
+    startApp();
+  } else {
+    showLogin();
+  }
 })();
 </script>
 </body>

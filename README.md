@@ -67,14 +67,21 @@ gleichzeitigem Bearbeiten gilt: Der zuletzt gespeicherte Stand gewinnt.
 
 ## Sicherheit — bitte lesen
 
-Die App läuft derzeit mit **offenem Zugriff**: Wer die Adresse und den
-öffentlichen Schlüssel kennt, kann Daten lesen und schreiben. Das ist zum
-Testen okay, solange das Repository **privat** bleibt.
+Die App ist durch einen **Login** geschützt: Daten und Fotos sind nur für
+angemeldete Nutzer sichtbar (Regel `nur_eingeloggt` und die
+`authenticated`-Regeln für den Foto-Ordner in `supabase-setup.sql`).
 
-**Vor einer öffentlichen Veröffentlichung** sollte ein einfacher Login
-ergänzt werden (nur die berechtigten Personen), zusammen mit strengeren
-Zugriffsregeln. Die vorläufige Regel `offen_vorlaeufig` in
-`supabase-setup.sql` wird dabei ersetzt.
+**Nutzer anlegen** im Supabase-Dashboard unter *Authentication → Users →
+Add user*: als E-Mail `<benutzername>@hausakte.local` eintragen, ein
+Passwort setzen und **Auto Confirm User** anhaken. Beim Login in der App
+wird nur der Benutzername eingegeben — das `@hausakte.local` hängt die App
+automatisch an. Unter *Authentication → Providers → Email* sollte
+**„Allow new users to sign up" ausgeschaltet** sein, damit sich niemand
+selbst registrieren kann.
+
+**Fotos:** Der Bucket `fotos` sollte auf **Private** stehen. Die App lädt
+Bilder über zeitlich begrenzte, signierte Links — öffentlich erreichbar
+sind sie damit nicht.
 
 ## Erste Schritte in der App
 

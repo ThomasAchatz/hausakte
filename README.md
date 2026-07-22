@@ -87,10 +87,16 @@ angemeldete Nutzer sichtbar und werden durch die Regeln in
 
 Es gibt zwei Rollen:
 
-- **Voller Zugriff:** `isabella2`, `tommy2` — lesen und bearbeiten.
-- **Nur Lesen:** `heeeelper` — sieht alles, kann aber nichts anlegen,
-  ändern oder löschen. Das ist in der App (ausgeblendete Buttons) *und*
-  serverseitig in den Zugriffsregeln erzwungen.
+- **Voller Zugriff (bearbeiten):** `isabella2`, `tommy2`.
+- **Nur Lesen:** **alle anderen** Konten (z. B. `mama2`, `papa2`,
+  `heeeelper`). Sie sehen alles, können aber nichts anlegen, ändern oder
+  löschen. Das ist in der App (ausgeblendete Buttons) *und* serverseitig in
+  den Zugriffsregeln erzwungen.
+
+Neue **Nur-Lese-Konten** einfach in Supabase anlegen — keine Code-Änderung
+nötig. Soll ein neues Konto **bearbeiten** dürfen, muss es in `index.html`
+(Liste `EDITORS`) und in `supabase-setup.sql` (die beiden `in (...)`-Listen)
+ergänzt werden.
 
 **Nutzer anlegen** im Supabase-Dashboard unter *Authentication → Users →
 Add user*: als E-Mail `<benutzername>@hausakte.local` eintragen, ein

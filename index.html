@@ -54,7 +54,7 @@
     background-size:12px 12px,12px 12px,60px 60px,60px 60px;
     -webkit-font-smoothing:antialiased;
     line-height:1.45;
-    padding-bottom:76px;
+    padding-bottom:calc(84px + env(safe-area-inset-bottom));
   }
 
   /* ---------- header / titleblock ---------- */
@@ -120,6 +120,15 @@
     text-transform:uppercase;color:var(--ink-soft);
   }
   .card-b{padding:13px;}
+
+  /* klickbare Übersicht-Kacheln */
+  .card.tap{position:relative;cursor:pointer;transition:transform .09s ease, box-shadow .15s, border-color .15s;}
+  .card.tap:hover{border-color:var(--line-strong);}
+  .card.tap:active{transform:scale(.985);}
+  .card.tap::after{
+    content:"›";position:absolute;top:7px;right:11px;
+    color:var(--accent);font-weight:700;font-size:16px;line-height:1;opacity:.5;
+  }
 
   .eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);}
 
@@ -282,15 +291,16 @@
     background:var(--card);border-top:1px solid var(--line-strong);
     display:flex;overflow-x:auto;scrollbar-width:none;
     box-shadow:0 -2px 8px rgba(30,38,33,.06);
+    padding-bottom:env(safe-area-inset-bottom);
   }
   nav::-webkit-scrollbar{display:none;}
   nav button{
-    flex:1 0 auto;min-width:62px;padding:8px 4px 7px;
-    display:flex;flex-direction:column;align-items:center;gap:3px;
+    flex:1 0 auto;min-width:64px;padding:12px 6px 11px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
     color:var(--ink-faint);border-top:2px solid transparent;
   }
-  nav button svg{width:20px;height:20px;}
-  nav button .nlab{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;}
+  nav button svg{width:23px;height:23px;}
+  nav button .nlab{font-family:var(--font-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;}
   nav button.active{color:var(--accent);border-top-color:var(--accent);}
 
   .footer-tb{
@@ -305,7 +315,7 @@
     margin-bottom:14px;letter-spacing:.02em;
   }
   .toast{
-    position:fixed;bottom:88px;left:50%;transform:translateX(-50%);
+    position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
     background:var(--ink);color:var(--paper);font-family:var(--font-mono);font-size:12px;
     padding:10px 16px;border-radius:var(--radius);z-index:200;letter-spacing:.04em;
     opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
@@ -315,7 +325,7 @@
 
   /* nav scroll affordance */
   .navfade{
-    position:fixed;bottom:0;height:57px;width:28px;z-index:61;pointer-events:none;
+    position:fixed;bottom:0;height:calc(64px + env(safe-area-inset-bottom));width:28px;z-index:61;pointer-events:none;
     transition:opacity .2s;opacity:0;
   }
   .navfade.l{left:0;background:linear-gradient(90deg,var(--card) 30%,transparent);}
@@ -585,7 +595,7 @@ const blankData = () => ({
 let saveTimer=null, saving=false, localTs=null;
 function persist(who){
   if(READONLY) return;
-  if(who!==undefined){ data.meta.lastBy=who; }
+  data.meta.lastBy = (who!==undefined ? who : currentUser) || data.meta.lastBy || '';
   data.meta.lastAt = new Date().toISOString();
   clearTimeout(saveTimer);
   saveTimer=setTimeout(doSave, 350);
@@ -699,7 +709,7 @@ function renderDash(){
   const lastLog = [...data.tagebuch].sort((a,b)=>b.datum.localeCompare(a.datum))[0];
 
   document.getElementById('dashGrid').innerHTML = `
-    <div class="card heroCard span2">
+    <div class="card tap heroCard span2" onclick="go('fortschritt')">
       <div class="hero">
         <div class="section-svg">${crossSVG(96)}</div>
         <div class="hero-txt">
@@ -711,19 +721,19 @@ function renderDash(){
       </div>
     </div>
 
-    <div class="card"><div class="metric">
+    <div class="card tap" onclick="go('stunden')"><div class="metric">
       <div class="eyebrow">Eigenleistung</div>
       <div class="val">${hrs(totalH)}<span class="unit"> h</span></div>
       <div class="sub">${perPStr}</div>
     </div></div>
 
-    <div class="card"><div class="metric">
+    <div class="card tap" onclick="go('stunden')"><div class="metric">
       <div class="eyebrow">Gesparter Wert</div>
       <div class="val small">${eur(wert)}</div>
       <div class="sub">≈ ${eur(data.meta.stundensatz)}/h angesetzt</div>
     </div></div>
 
-    <div class="card"><div class="metric">
+    <div class="card tap" onclick="go('kosten')"><div class="metric">
       <div class="eyebrow">Ausgaben</div>
       <div class="val small">${eur(spent)}</div>
       ${budget>0
@@ -732,20 +742,20 @@ function renderDash(){
         : `<div class="sub">Budget im Reiter „Projekt" setzen</div>`}
     </div></div>
 
-    <div class="card"><div class="metric">
+    <div class="card tap" onclick="go('termine')"><div class="metric">
       <div class="eyebrow">Nächster Termin</div>
       ${upcoming
         ? `<div class="val small">${fmtDate(upcoming.datum)}</div><div class="sub">${esc(upcoming.titel)}</div>`
         : `<div class="val small" style="color:var(--ink-faint)">—</div><div class="sub">keine geplant</div>`}
     </div></div>
 
-    <div class="card"><div class="metric">
+    <div class="card tap" onclick="go('maengel')"><div class="metric">
       <div class="eyebrow">Offene Mängel</div>
       <div class="val">${offMangel}</div>
       <div class="sub ${offMangel>0?'warn':'ok'}">${offMangel>0?'zu erledigen':'alles sauber'}</div>
     </div></div>
 
-    <div class="card span2"><div class="metric">
+    <div class="card tap span2" onclick="go('tagebuch')"><div class="metric">
       <div class="eyebrow">Letzter Tagebucheintrag</div>
       ${lastLog
         ? `<div class="sub" style="margin-top:4px;color:var(--ink)"><b style="font-family:var(--font-mono)">${fmtDate(lastLog.datum)}</b> — ${esc(lastLog.text).slice(0,140)}${lastLog.text.length>140?'…':''}</div>`
@@ -1230,8 +1240,8 @@ function go(id){
    AUTH + BOOT
    ============================================================ */
 const EMAIL_DOMAIN='@hausakte.local';
-const USER_LABELS={ 'isabella2':'Isabella', 'tommy2':'Thomas', 'heeeelper':'Helfer' };
-const READONLY_USERS=['heeeelper'];
+const USER_LABELS={ 'isabella2':'Isabella', 'tommy2':'Thomas', 'heeeelper':'Helfer', 'mama2':'Mama', 'papa2':'Papa' };
+const EDITORS=['isabella2','tommy2'];   // nur diese dürfen bearbeiten; alle anderen nur lesen
 let currentUser='';
 let READONLY=false;
 let appStarted=false;
@@ -1251,7 +1261,7 @@ async function doLogin(){
   if(error){ err.textContent='Anmeldung fehlgeschlagen. Name oder Passwort stimmt nicht.'; err.classList.add('show'); return; }
   err.classList.remove('show');
   currentUser=USER_LABELS[u]||u;
-  READONLY=READONLY_USERS.includes(u);
+  READONLY=!EDITORS.includes(u);
   hideLogin();
   startApp();
 }
@@ -1285,7 +1295,7 @@ async function startApp(){
   if(session){
     const u=(session.user.email||'').split('@')[0];
     currentUser=USER_LABELS[u]||u;
-    READONLY=READONLY_USERS.includes(u);
+    READONLY=!EDITORS.includes(u);
     startApp();
   } else {
     showLogin();

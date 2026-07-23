@@ -54,7 +54,7 @@
     background-size:12px 12px,12px 12px,60px 60px,60px 60px;
     -webkit-font-smoothing:antialiased;
     line-height:1.45;
-    padding-bottom:calc(84px + env(safe-area-inset-bottom));
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));
   }
 
   /* ---------- header / titleblock ---------- */
@@ -183,6 +183,10 @@
     background:var(--card);margin-bottom:8px;box-shadow:var(--shadow);
   }
   .item .grow{flex:1;min-width:0;}
+  .item.tap{cursor:pointer;transition:transform .09s, border-color .15s;}
+  .item.tap:active{transform:scale(.99);}
+  .item.tap:hover{border-color:var(--line-strong);}
+  .photo img{cursor:pointer;}
   .item .t1{font-weight:600;font-size:14px;line-height:1.3;}
   .item .t2{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);margin-top:3px;letter-spacing:.02em;}
   .item .amt{font-family:var(--font-mono);font-weight:600;font-size:14px;white-space:nowrap;}
@@ -286,22 +290,82 @@
   .photo .del:hover{background:var(--signal);}
 
   /* ---------- bottom nav ---------- */
-  nav{
-    position:fixed;bottom:0;left:0;right:0;z-index:60;
-    background:var(--card);border-top:1px solid var(--line-strong);
-    display:flex;overflow-x:auto;scrollbar-width:none;
-    box-shadow:0 -2px 8px rgba(30,38,33,.06);
-    padding-bottom:env(safe-area-inset-bottom);
+  /* ---------- Burger + Schublade ---------- */
+  .burger{
+    flex:none;width:40px;height:40px;border:1px solid rgba(255,255,255,.22);border-radius:3px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    background:rgba(255,255,255,.05);
   }
-  nav::-webkit-scrollbar{display:none;}
-  nav button{
-    flex:1 0 auto;min-width:64px;padding:12px 6px 11px;
-    display:flex;flex-direction:column;align-items:center;gap:4px;
-    color:var(--ink-faint);border-top:2px solid transparent;
+  .burger span{display:block;width:17px;height:2px;background:var(--paper);border-radius:1px;transition:.2s;}
+  .burger:active{background:rgba(255,255,255,.14);}
+
+  .drawer-bg{
+    position:fixed;inset:0;background:rgba(20,26,22,.5);z-index:79;
+    opacity:0;pointer-events:none;transition:opacity .22s;
   }
-  nav button svg{width:23px;height:23px;}
-  nav button .nlab{font-family:var(--font-mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;}
-  nav button.active{color:var(--accent);border-top-color:var(--accent);}
+  .drawer-bg.open{opacity:1;pointer-events:auto;}
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:78%;max-width:310px;z-index:80;
+    background:var(--paper-2);border-left:2px solid var(--accent);
+    box-shadow:-8px 0 30px rgba(30,38,33,.22);
+    transform:translateX(100%);transition:transform .24s ease;
+    display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+  }
+  .drawer.open{transform:none;}
+  .drawer-h{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:15px 16px;border-bottom:1.5px solid var(--ink);
+  }
+  .drawer-h h3{font-family:var(--font-display);text-transform:uppercase;font-size:17px;letter-spacing:.05em;font-weight:600;}
+  #drawerList{flex:1;overflow-y:auto;padding:8px 0 14px;}
+  #drawerList button{
+    width:100%;display:flex;align-items:center;gap:12px;
+    padding:13px 16px;color:var(--ink-soft);text-align:left;
+    border-left:3px solid transparent;
+  }
+  #drawerList button svg{width:20px;height:20px;flex:none;}
+  #drawerList button .nlab{font-size:14.5px;font-weight:500;letter-spacing:.01em;}
+  #drawerList button.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-soft);}
+  #drawerList button:active{background:var(--accent-soft);}
+  .drawer-foot{
+    padding:12px 16px calc(14px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);
+    font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);letter-spacing:.04em;line-height:1.6;
+  }
+
+  /* ---------- Monats-Trenner ---------- */
+  .mhead{
+    display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin:16px 2px 7px;padding-bottom:5px;border-bottom:1px solid var(--line-strong);
+  }
+  .mhead:first-child{margin-top:2px;}
+  .mhead .mname{
+    font-family:var(--font-display);text-transform:uppercase;font-size:14px;
+    letter-spacing:.09em;font-weight:600;color:var(--ink);
+  }
+  .mhead .msum{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);font-weight:500;}
+
+  /* ---------- Foto-Vollbild ---------- */
+  .lightbox{
+    position:fixed;inset:0;z-index:150;background:rgba(16,20,17,.94);
+    display:none;flex-direction:column;
+    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  }
+  .lightbox.open{display:flex;}
+  .lb-top{display:flex;justify-content:flex-end;padding:10px 14px;}
+  .lb-top button{color:var(--paper);font-size:28px;line-height:1;padding:2px 8px;}
+  .lb-img{flex:1;display:flex;align-items:center;justify-content:center;padding:0 10px;min-height:0;}
+  .lb-img img{max-width:100%;max-height:100%;object-fit:contain;border-radius:3px;}
+  .lb-bar{
+    display:flex;align-items:center;gap:12px;padding:14px 16px 18px;
+    border-top:1px solid rgba(255,255,255,.13);
+  }
+  .lb-bar .grow{flex:1;min-width:0;}
+  .lb-bar .t1{color:var(--paper);font-weight:600;font-size:15px;line-height:1.3;}
+  .lb-bar .t2{color:#9aa39b;font-family:var(--font-mono);font-size:11px;margin-top:3px;}
+  .lb-bar .btn.ghost{color:#8FC3C8;border-color:rgba(255,255,255,.25);}
+  body.ro .lb-bar .btn{display:none;}
 
   .footer-tb{
     margin-top:24px;padding-top:12px;border-top:1px solid var(--line);
@@ -315,7 +379,7 @@
     margin-bottom:14px;letter-spacing:.02em;
   }
   .toast{
-    position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+    position:fixed;bottom:calc(26px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
     background:var(--ink);color:var(--paper);font-family:var(--font-mono);font-size:12px;
     padding:10px 16px;border-radius:var(--radius);z-index:200;letter-spacing:.04em;
     opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
@@ -324,22 +388,6 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
 
   /* nav scroll affordance */
-  .navfade{
-    position:fixed;bottom:0;height:calc(64px + env(safe-area-inset-bottom));width:28px;z-index:61;pointer-events:none;
-    transition:opacity .2s;opacity:0;
-  }
-  .navfade.l{left:0;background:linear-gradient(90deg,var(--card) 30%,transparent);}
-  .navfade.r{right:0;background:linear-gradient(270deg,var(--card) 30%,transparent);}
-  .navfade.show{opacity:1;}
-  .navfade.r::after{
-    content:"›";position:absolute;right:6px;top:50%;transform:translateY(-50%);
-    color:var(--accent);font-size:19px;font-weight:700;line-height:1;
-  }
-  .navfade.l::after{
-    content:"‹";position:absolute;left:6px;top:50%;transform:translateY(-50%);
-    color:var(--accent);font-size:19px;font-weight:700;line-height:1;
-  }
-
   /* login screen */
   #login{
     position:fixed;inset:0;z-index:300;display:none;
@@ -415,6 +463,9 @@
       <div class="pct" id="hdrPct">0%</div>
       <div class="lbl">Fortschritt</div>
     </div>
+    <button class="burger" onclick="toggleDrawer()" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
 
@@ -517,9 +568,24 @@
 <div class="backdrop" id="backdrop"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 
-<nav id="nav"></nav>
-<div class="navfade l" id="navFadeL"></div>
-<div class="navfade r" id="navFadeR"></div>
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-h">
+    <h3>Bauakte</h3>
+    <button class="row-x" style="font-size:26px" onclick="closeDrawer()" aria-label="Schließen">×</button>
+  </div>
+  <div id="drawerList"></div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</aside>
+
+<div class="lightbox" id="lightbox">
+  <div class="lb-top"><button onclick="closeLightbox()" aria-label="Schließen">×</button></div>
+  <div class="lb-img"><img id="lbImg" alt=""></div>
+  <div class="lb-bar">
+    <div class="grow"><div class="t1" id="lbTitel"></div><div class="t2" id="lbMeta"></div></div>
+    <button class="btn ghost sm" onclick="editPhotoFromLb()">Bearbeiten</button>
+  </div>
+</div>
 
 <script>
 /* ============================================================
@@ -865,16 +931,16 @@ function renderStunden(){
   const list = [...data.stunden].sort((a,b)=>b.datum.localeCompare(a.datum));
   const el=document.getElementById('stundenList');
   if(!list.length){ el.innerHTML=`<div class="empty"><b>Noch keine Stunden</b>Trag euren ersten Bautag ein — jede Stunde zählt.</div>`; return; }
-  el.innerHTML = list.map(x=>`
-    <div class="item">
+  el.innerHTML = renderByMonth(list, x=>`
+    <div class="item tap" onclick="openStunden('${x.id}')">
       <span class="datechip">${fmtDate(x.datum)}</span>
       <div class="grow">
         <div class="t1">${esc(x.person)}</div>
         <div class="t2">${esc(x.taetigkeit)||'—'}</div>
       </div>
       <span class="amt">${hrs(x.stunden)} h</span>
-      <button class="row-x" onclick="del('stunden','${x.id}')" aria-label="Löschen">×</button>
-    </div>`).join('');
+      <button class="row-x" onclick="event.stopPropagation();askDel('stunden','${x.id}')" aria-label="Löschen">×</button>
+    </div>`, x=>(+x.stunden||0), v=>hrs(v)+' h');
 }
 
 function renderFirma(){
@@ -901,16 +967,16 @@ function renderFirma(){
 
   const el=document.getElementById('firmaList');
   if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Firmenstunden</b>Halte fest, welche Firma mit wie vielen Leuten auf der Baustelle war.</div>`; return; }
-  el.innerHTML=[...list].sort((a,b)=>b.datum.localeCompare(a.datum)).map(x=>`
-    <div class="item">
+  el.innerHTML=renderByMonth([...list].sort((a,b)=>b.datum.localeCompare(a.datum)), x=>`
+    <div class="item tap" onclick="openFirma('${x.id}')">
       <span class="datechip">${fmtDate(x.datum)}</span>
       <div class="grow">
         <div class="t1">${esc(x.firma)}</div>
         <div class="t2">${x.arbeiter} ${x.arbeiter==1?'Arbeiter':'Arbeiter'} × ${hrs(x.stunden)} h${x.taetigkeit?' · '+esc(x.taetigkeit):''}</div>
       </div>
       <span class="amt">${hrs(firmaH(x))} h</span>
-      <button class="row-x" onclick="del('firmenstunden','${x.id}')" aria-label="Löschen">×</button>
-    </div>`).join('');
+      <button class="row-x" onclick="event.stopPropagation();askDel('firmenstunden','${x.id}')" aria-label="Löschen">×</button>
+    </div>`, x=>firmaH(x), v=>hrs(v)+' h');
 }
 const firmaH = x => (+x.arbeiter||0)*(+x.stunden||0);
 
@@ -949,16 +1015,16 @@ function renderKosten(){
   const list=[...data.kosten].sort((a,b)=>b.datum.localeCompare(a.datum));
   const el=document.getElementById('kostenList');
   if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Belege</b>Erfasse Rechnungen und Materialkosten, um euer Budget im Blick zu halten.</div>`; return; }
-  el.innerHTML=list.map(x=>`
-    <div class="item">
+  el.innerHTML=renderByMonth(list, x=>`
+    <div class="item tap" onclick="openKosten('${x.id}')">
       <span class="datechip">${fmtDate(x.datum)}</span>
       <div class="grow">
         <div class="t1">${esc(x.bezeichnung)}</div>
         <div class="t2">${esc(x.kategorie)||'Sonstiges'}</div>
       </div>
       <span class="amt neg">${eur2(x.betrag)}</span>
-      <button class="row-x" onclick="del('kosten','${x.id}')">×</button>
-    </div>`).join('');
+      <button class="row-x" onclick="event.stopPropagation();askDel('kosten','${x.id}')">×</button>
+    </div>`, x=>(+x.betrag||0), v=>eur(v));
 }
 
 function renderMaterial(){
@@ -968,13 +1034,13 @@ function renderMaterial(){
   const tagFor=s=>s==='geliefert'?'<span class="tag on">Geliefert</span>':s==='bestellt'?'<span class="tag mid">Bestellt</span>':'<span class="tag">Geplant</span>';
   const order={geplant:0,bestellt:1,geliefert:2};
   el.innerHTML=[...list].sort((a,b)=>order[a.status]-order[b.status]).map(x=>`
-    <div class="item">
+    <div class="item tap" onclick="openMaterial('${x.id}')">
       <div class="grow">
         <div class="t1">${esc(x.bezeichnung)}${x.menge?` <span style="color:var(--ink-soft);font-weight:400">· ${esc(x.menge)}</span>`:''}</div>
         ${x.notiz?`<div class="t2">${esc(x.notiz)}</div>`:''}
       </div>
-      <button onclick="cycleMaterial('${x.id}')" style="border:none;background:none">${tagFor(x.status)}</button>
-      <button class="row-x" onclick="del('material','${x.id}')">×</button>
+      <button onclick="event.stopPropagation();cycleMaterial('${x.id}')" style="border:none;background:none">${tagFor(x.status)}</button>
+      <button class="row-x" onclick="event.stopPropagation();askDel('material','${x.id}')">×</button>
     </div>`).join('');
 }
 function cycleMaterial(id){
@@ -990,16 +1056,16 @@ function renderTermine(){
   const el=document.getElementById('termineList');
   if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Termine</b>Lieferungen, Handwerker, Abnahmen — alles an einem Ort.</div>`; return; }
   const t0=today();
-  el.innerHTML=list.map(x=>`
-    <div class="item">
+  el.innerHTML=renderByMonth(list, x=>`
+    <div class="item tap" onclick="openTermin('${x.id}')">
       <span class="datechip" ${x.datum<t0?'style="opacity:.5"':''}>${fmtDate(x.datum)}</span>
       <div class="grow">
         <div class="t1">${esc(x.titel)}</div>
         ${x.notiz?`<div class="t2">${esc(x.notiz)}</div>`:''}
       </div>
       ${x.datum<t0?'<span class="tag">vorbei</span>':''}
-      <button class="row-x" onclick="del('termine','${x.id}')">×</button>
-    </div>`).join('');
+      <button class="row-x" onclick="event.stopPropagation();askDel('termine','${x.id}')">×</button>
+    </div>`);
 }
 
 function renderMaengel(){
@@ -1007,13 +1073,13 @@ function renderMaengel(){
   const el=document.getElementById('maengelList');
   if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Mängel</b>Notiere Punkte, die noch nachgebessert werden müssen.</div>`; return; }
   el.innerHTML=list.map(x=>`
-    <div class="item">
-      <button onclick="toggleMangel('${x.id}')" style="flex:none;width:22px;height:22px;border:1.5px solid ${x.status==='erledigt'?'var(--accent)':'var(--line-strong)'};border-radius:3px;background:${x.status==='erledigt'?'var(--accent)':'#fff'};color:#fff;font-size:14px;line-height:1;">${x.status==='erledigt'?'✓':''}</button>
+    <div class="item tap" onclick="openMangel('${x.id}')">
+      <button onclick="event.stopPropagation();toggleMangel('${x.id}')" style="flex:none;width:22px;height:22px;border:1.5px solid ${x.status==='erledigt'?'var(--accent)':'var(--line-strong)'};border-radius:3px;background:${x.status==='erledigt'?'var(--accent)':'#fff'};color:#fff;font-size:14px;line-height:1;">${x.status==='erledigt'?'✓':''}</button>
       <div class="grow">
         <div class="t1" style="${x.status==='erledigt'?'text-decoration:line-through;color:var(--ink-soft)':''}">${esc(x.beschreibung)}</div>
         ${x.ort?`<div class="t2">${esc(x.ort)}</div>`:''}
       </div>
-      <button class="row-x" onclick="del('maengel','${x.id}')">×</button>
+      <button class="row-x" onclick="event.stopPropagation();askDel('maengel','${x.id}')">×</button>
     </div>`).join('');
 }
 function toggleMangel(id){
@@ -1028,30 +1094,40 @@ function renderTagebuch(){
   const list=[...data.tagebuch].sort((a,b)=>b.datum.localeCompare(a.datum));
   const el=document.getElementById('tagebuchList');
   if(!list.length){ el.innerHTML=`<div class="empty"><b>Leeres Tagebuch</b>Wer war da, was lief, was ist aufgefallen — der erste Eintrag wartet.</div>`; return; }
-  el.innerHTML=list.map(x=>`
-    <div class="card"><div class="card-b">
+  el.innerHTML=renderByMonth(list, x=>`
+    <div class="card tap" onclick="openTagebuch('${x.id}')"><div class="card-b">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
         <span class="datechip">${fmtDate(x.datum)}</span>
         <div style="display:flex;gap:8px;align-items:center">
           ${x.wetter?`<span class="tag">${esc(x.wetter)}</span>`:''}
-          <button class="row-x" onclick="del('tagebuch','${x.id}')">×</button>
+          <button class="row-x" onclick="event.stopPropagation();askDel('tagebuch','${x.id}')">×</button>
         </div>
       </div>
       <div style="font-size:14px;white-space:pre-wrap;line-height:1.5">${esc(x.text)}</div>
-    </div></div>`).join('');
+    </div></div>`);
 }
 
 async function renderBilder(){
   const el=document.getElementById('bilderGrid');
   if(!data.bilder.length){ el.innerHTML=`<div class="empty"><b>Keine Fotos</b>Ein Foto pro Bauabschnitt ergibt später einen schönen Vorher-Nachher-Verlauf.</div>`; return; }
   const list=[...data.bilder].sort((a,b)=>b.datum.localeCompare(a.datum));
-  el.innerHTML=`<div class="photo-grid">`+list.map(x=>`
-    <div class="photo">
-      <button class="del" onclick="delPhoto('${x.id}')">×</button>
-      <img id="img-${x.id}" alt="${esc(x.titel)}" loading="lazy">
-      <div class="cap"><div class="t1">${esc(x.titel)||'Ohne Titel'}</div>
-        <div class="t2">${fmtDate(x.datum)}${x.phase?' · '+esc(x.phase):''}</div></div>
-    </div>`).join('')+`</div>`;
+  // nach Monaten gruppieren, je Monat ein eigenes Raster
+  const bloecke=[]; let akt=null;
+  list.forEach(x=>{
+    const lab=monatLabel(x.datum);
+    if(!akt || akt.lab!==lab){ akt={lab, items:[]}; bloecke.push(akt); }
+    akt.items.push(x);
+  });
+  el.innerHTML = bloecke.map(b=>`
+    <div class="mhead"><span class="mname">${b.lab}</span>
+      <span class="msum">${b.items.length} ${b.items.length===1?'Foto':'Fotos'}</span></div>
+    <div class="photo-grid">${b.items.map(x=>`
+      <div class="photo">
+        <button class="del" onclick="event.stopPropagation();askDelPhoto('${x.id}')">×</button>
+        <img id="img-${x.id}" alt="${esc(x.titel)}" loading="lazy" onclick="openLightbox('${x.id}')">
+        <div class="cap"><div class="t1">${esc(x.titel)||'Ohne Titel'}</div>
+          <div class="t2">${fmtDate(x.datum)}${x.phase?' · '+esc(x.phase):''}</div></div>
+      </div>`).join('')}</div>`).join('');
   for(const x of list){
     const url = await cloud.signedUrl(x.id);
     const img=document.getElementById('img-'+x.id);
@@ -1063,13 +1139,13 @@ function renderKontakte(){
   const el=document.getElementById('kontakteList');
   if(!data.kontakte.length){ el.innerHTML=`<div class="empty"><b>Keine Kontakte</b>Handwerker, Architekt, Lieferanten — griffbereit an einem Ort.</div>`; return; }
   el.innerHTML=data.kontakte.map(x=>`
-    <div class="item">
+    <div class="item tap" onclick="openKontakt('${x.id}')">
       <div class="grow">
         <div class="t1">${esc(x.name)}</div>
         <div class="t2">${esc(x.rolle)||''}${x.telefon?' · '+esc(x.telefon):''}${x.notiz?' · '+esc(x.notiz):''}</div>
       </div>
-      ${x.telefon?`<a class="btn ghost sm" href="tel:${esc(x.telefon)}">Anruf</a>`:''}
-      <button class="row-x" onclick="del('kontakte','${x.id}')">×</button>
+      ${x.telefon?`<a class="btn ghost sm" onclick="event.stopPropagation()" href="tel:${esc(x.telefon)}">Anruf</a>`:''}
+      <button class="row-x" onclick="event.stopPropagation();askDel('kontakte','${x.id}')">×</button>
     </div>`).join('');
 }
 
@@ -1134,6 +1210,50 @@ function saveSetup(){
   renderAll(); toast('Projekt gespeichert');
 }
 
+/* ---------- Löschen mit Rückfrage ---------- */
+// Kurzbeschreibung eines Eintrags für die Rückfrage
+function eintragText(coll,id){
+  const x=(data[coll]||[]).find(y=>y.id===id); if(!x) return '';
+  switch(coll){
+    case 'stunden':       return `${x.person} · ${hrs(x.stunden)} h · ${fmtDate(x.datum)}`;
+    case 'firmenstunden': return `${x.firma} · ${hrs(firmaH(x))} h · ${fmtDate(x.datum)}`;
+    case 'kosten':        return `${x.bezeichnung} · ${eur2(x.betrag)} · ${fmtDate(x.datum)}`;
+    case 'material':      return `${x.bezeichnung}${x.menge?' · '+x.menge:''}`;
+    case 'termine':       return `${x.titel} · ${fmtDate(x.datum)}`;
+    case 'maengel':       return `${x.beschreibung}${x.ort?' · '+x.ort:''}`;
+    case 'tagebuch':      return `${fmtDate(x.datum)} · ${(x.text||'').slice(0,60)}${(x.text||'').length>60?'…':''}`;
+    case 'kontakte':      return `${x.name}${x.rolle?' · '+x.rolle:''}`;
+    default: return '';
+  }
+}
+const DEL_TITEL={stunden:'Stundeneintrag löschen?', firmenstunden:'Firmenstunden löschen?',
+  kosten:'Beleg löschen?', material:'Material löschen?', termine:'Termin löschen?',
+  maengel:'Mangel löschen?', tagebuch:'Eintrag löschen?', kontakte:'Kontakt löschen?'};
+
+function confirmSheet(titel, text, aktionJS){
+  openSheet(titel,`
+    <div style="font-size:14.5px;line-height:1.5;margin-bottom:6px">${text}</div>
+    <p style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);line-height:1.6;margin-bottom:18px">
+      Das lässt sich nicht rückgängig machen — auch nicht auf dem anderen Gerät.</p>
+    <button class="btn block" style="background:var(--signal);border-color:var(--signal)" onclick="${aktionJS}">Endgültig löschen</button>
+    <button class="btn ghost block" style="margin-top:9px" onclick="closeSheet()">Abbrechen</button>`);
+}
+
+function askDel(coll,id){
+  if(!guardEdit()) return;
+  const info=eintragText(coll,id);
+  confirmSheet(DEL_TITEL[coll]||'Eintrag löschen?',
+    info?`<b>${esc(info)}</b>`:'Diesen Eintrag wirklich löschen?',
+    `del('${coll}','${id}')`);
+}
+function askDelPhoto(id){
+  if(!guardEdit()) return;
+  const f=data.bilder.find(x=>x.id===id);
+  confirmSheet('Foto löschen?',
+    f?`<b>${esc(f.titel||'Ohne Titel')}</b> · ${fmtDate(f.datum)}`:'Dieses Foto wirklich löschen?',
+    `delPhoto('${id}')`);
+}
+
 /* ---------- generic delete ---------- */
 const cyc2 = s => ({offen:'Offen', laufend:'Läuft', fertig:'Fertig'}[s]||s);
 const COLL_LABEL = {stunden:'einen Stundeneintrag', firmenstunden:'Firmenstunden', kosten:'einen Beleg',
@@ -1142,12 +1262,15 @@ function del(coll,id){
   if(READONLY) return;
   data[coll]=data[coll].filter(x=>x.id!==id);
   persist(); logChange('hat '+(COLL_LABEL[coll]||'einen Eintrag')+' gelöscht');
+  closeSheet(); toast('Gelöscht');
   persist(); renderAll();
 }
 async function delPhoto(id){
+  if(READONLY) return;
   data.bilder=data.bilder.filter(x=>x.id!==id);
+  closeSheet(); toast('Foto gelöscht');
+  persist(); logChange('hat ein Foto gelöscht'); renderBilder();
   await cloud.deletePhoto(id);
-  persist(); renderBilder();
 }
 
 /* ============================================================
@@ -1171,17 +1294,23 @@ function pickPerson(btn){
   btn.classList.add('sel');
 }
 
-function openStunden(){
-  pickedPerson=data.personen[0]||'';
-  openSheet('Stunden erfassen',`
+let editId=null;
+function guardEdit(){ if(READONLY){ toast('Nur-Lese-Zugang'); return false; } return true; }
+
+function openStunden(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.stunden.find(x=>x.id===editId) : null;
+  pickedPerson = e ? e.person : (data.personen[0]||'');
+  openSheet(e?'Stunden bearbeiten':'Stunden erfassen',`
     <label class="f"><span class="lab">Person</span><div class="seg" id="segPerson">${personOptions(pickedPerson)}</div></label>
     <label class="f"><span class="lab">… oder neuer Helfer</span><input id="st_neu" autocapitalize="words" placeholder="Name eintippen (Familie, Freunde)" oninput="if(this.value){pickedPerson=null;document.querySelectorAll('#segPerson button').forEach(b=>b.classList.remove('sel'));}"></label>
     <div class="two">
-      <label class="f"><span class="lab">Datum</span><input id="st_datum" type="date" value="${today()}"></label>
-      <label class="f"><span class="lab">Stunden</span><input id="st_h" type="number" inputmode="decimal" step="0.5" placeholder="z. B. 6"></label>
+      <label class="f"><span class="lab">Datum</span><input id="st_datum" type="date" value="${e?e.datum:today()}"></label>
+      <label class="f"><span class="lab">Stunden</span><input id="st_h" type="number" inputmode="decimal" step="0.5" placeholder="z. B. 6" value="${e?e.stunden:''}"></label>
     </div>
-    <label class="f"><span class="lab">Tätigkeit</span><input id="st_tat" placeholder="z. B. Schalung, Estrich, aufräumen"></label>
-    <button class="btn block" onclick="saveStunden()">Eintragen</button>`);
+    <label class="f"><span class="lab">Tätigkeit</span><input id="st_tat" placeholder="z. B. Schalung, Estrich, aufräumen" value="${e?esc(e.taetigkeit||''):''}"></label>
+    <button class="btn block" onclick="saveStunden()">${e?'Speichern':'Eintragen'}</button>`);
 }
 function saveStunden(){
   const h=+document.getElementById('st_h').value;
@@ -1189,10 +1318,16 @@ function saveStunden(){
   const neu=(document.getElementById('st_neu').value||'').trim();
   const person = neu || pickedPerson || data.personen[0] || '—';
   if(neu && !data.personen.includes(neu)) data.personen.push(neu);
-  data.stunden.push({id:uid(),datum:document.getElementById('st_datum').value||today(),
-    person, taetigkeit:document.getElementById('st_tat').value.trim(), stunden:h});
-  persist(); logChange('hat Stunden für '+person+' eingetragen ('+hrs(h)+' h)');
-  closeSheet(); renderAll(); toast('Stunden eingetragen');
+  const werte={datum:document.getElementById('st_datum').value||today(),
+    person, taetigkeit:document.getElementById('st_tat').value.trim(), stunden:h};
+  if(editId){
+    Object.assign(data.stunden.find(x=>x.id===editId), werte);
+    persist(); logChange('hat einen Stundeneintrag geändert ('+person+', '+hrs(h)+' h)');
+  } else {
+    data.stunden.push({id:uid(), ...werte});
+    persist(); logChange('hat Stunden für '+person+' eingetragen ('+hrs(h)+' h)');
+  }
+  editId=null; closeSheet(); renderAll(); toast('Stunden gespeichert');
 }
 
 /* ---------- Firmenstunden ---------- */
@@ -1206,19 +1341,22 @@ function pickFirma(btn){
   btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
 }
-function openFirma(){
-  pickedFirma=null;
+function openFirma(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.firmenstunden.find(x=>x.id===editId) : null;
+  pickedFirma = e ? e.firma : null;
   const hasFirmen=(data.firmen||[]).length>0;
-  openSheet('Firmenstunden erfassen',`
-    ${hasFirmen?`<label class="f"><span class="lab">Firma</span><div class="seg" id="segFirma">${firmaOptions(null)}</div></label>`:''}
+  openSheet(e?'Firmenstunden bearbeiten':'Firmenstunden erfassen',`
+    ${hasFirmen?`<label class="f"><span class="lab">Firma</span><div class="seg" id="segFirma">${firmaOptions(pickedFirma)}</div></label>`:''}
     <label class="f"><span class="lab">${hasFirmen?'… oder neue Firma':'Firma'}</span><input id="fs_neu" autocapitalize="words" placeholder="z. B. Zimmerei Huber" oninput="if(this.value){pickedFirma=null;document.querySelectorAll('#segFirma button').forEach(b=>b.classList.remove('sel'));}"></label>
     <div class="two">
-      <label class="f"><span class="lab">Datum</span><input id="fs_datum" type="date" value="${today()}"></label>
-      <label class="f"><span class="lab">Anzahl Arbeiter</span><input id="fs_anz" type="number" inputmode="numeric" step="1" min="1" value="1"></label>
+      <label class="f"><span class="lab">Datum</span><input id="fs_datum" type="date" value="${e?e.datum:today()}"></label>
+      <label class="f"><span class="lab">Anzahl Arbeiter</span><input id="fs_anz" type="number" inputmode="numeric" step="1" min="1" value="${e?e.arbeiter:1}"></label>
     </div>
-    <label class="f"><span class="lab">Stunden je Arbeiter</span><input id="fs_h" type="number" inputmode="decimal" step="0.5" placeholder="z. B. 8"></label>
-    <label class="f"><span class="lab">Tätigkeit (optional)</span><input id="fs_tat" placeholder="z. B. Dachstuhl aufstellen"></label>
-    <button class="btn block" onclick="saveFirma()">Eintragen</button>`);
+    <label class="f"><span class="lab">Stunden je Arbeiter</span><input id="fs_h" type="number" inputmode="decimal" step="0.5" placeholder="z. B. 8" value="${e?e.stunden:''}"></label>
+    <label class="f"><span class="lab">Tätigkeit (optional)</span><input id="fs_tat" placeholder="z. B. Dachstuhl aufstellen" value="${e?esc(e.taetigkeit||''):''}"></label>
+    <button class="btn block" onclick="saveFirma()">${e?'Speichern':'Eintragen'}</button>`);
 }
 function saveFirma(){
   const neu=(document.getElementById('fs_neu').value||'').trim();
@@ -1230,117 +1368,180 @@ function saveFirma(){
   if(!data.firmen) data.firmen=[];
   if(!data.firmen.includes(firma)) data.firmen.push(firma);
   if(!data.firmenstunden) data.firmenstunden=[];
-  data.firmenstunden.push({id:uid(),datum:document.getElementById('fs_datum').value||today(),
-    firma, arbeiter:anz, stunden:h, taetigkeit:document.getElementById('fs_tat').value.trim()});
-  persist(); logChange('hat Firmenstunden erfasst ('+esc(firma)+', '+hrs(anz*h)+' h)');
-  closeSheet(); renderAll(); toast('Firmenstunden eingetragen');
+  const werte={datum:document.getElementById('fs_datum').value||today(),
+    firma, arbeiter:anz, stunden:h, taetigkeit:document.getElementById('fs_tat').value.trim()};
+  if(editId){
+    Object.assign(data.firmenstunden.find(x=>x.id===editId), werte);
+    persist(); logChange('hat Firmenstunden geändert ('+firma+', '+hrs(anz*h)+' h)');
+  } else {
+    data.firmenstunden.push({id:uid(), ...werte});
+    persist(); logChange('hat Firmenstunden erfasst ('+firma+', '+hrs(anz*h)+' h)');
+  }
+  editId=null; closeSheet(); renderAll(); toast('Firmenstunden gespeichert');
 }
 
-function openKosten(){
-  openSheet('Beleg erfassen',`
+function openKosten(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.kosten.find(x=>x.id===editId) : null;
+  openSheet(e?'Beleg bearbeiten':'Beleg erfassen',`
     <div class="two">
-      <label class="f"><span class="lab">Datum</span><input id="k_datum" type="date" value="${today()}"></label>
-      <label class="f"><span class="lab">Betrag (€)</span><input id="k_betrag" type="number" inputmode="decimal" step="0.01" placeholder="0,00"></label>
+      <label class="f"><span class="lab">Datum</span><input id="k_datum" type="date" value="${e?e.datum:today()}"></label>
+      <label class="f"><span class="lab">Betrag (€)</span><input id="k_betrag" type="number" inputmode="decimal" step="0.01" placeholder="0,00" value="${e?e.betrag:''}"></label>
     </div>
-    <label class="f"><span class="lab">Bezeichnung</span><input id="k_bez" placeholder="z. B. Beton, Dachziegel, Miete Bagger"></label>
+    <label class="f"><span class="lab">Bezeichnung</span><input id="k_bez" placeholder="z. B. Beton, Dachziegel, Miete Bagger" value="${e?esc(e.bezeichnung):''}"></label>
     <label class="f"><span class="lab">Kategorie</span>
       <select id="k_kat">
-        <option>Material</option><option>Werkzeug/Miete</option><option>Handwerker</option>
-        <option>Gebühren/Amt</option><option>Sonstiges</option>
+        ${['Material','Werkzeug/Miete','Handwerker','Gebühren/Amt','Sonstiges']
+          .map(k=>`<option ${e&&e.kategorie===k?'selected':''}>${k}</option>`).join('')}
       </select></label>
-    <button class="btn block" onclick="saveKosten()">Erfassen</button>`);
+    <button class="btn block" onclick="saveKosten()">${e?'Speichern':'Erfassen'}</button>`);
 }
 function saveKosten(){
   const b=+document.getElementById('k_betrag').value;
   const bez=document.getElementById('k_bez').value.trim();
   if(!b||!bez){ toast('Betrag & Bezeichnung nötig'); return; }
-  data.kosten.push({id:uid(),datum:document.getElementById('k_datum').value||today(),
-    betrag:b,bezeichnung:bez,kategorie:document.getElementById('k_kat').value});
-  persist(); logChange('hat einen Beleg erfasst ('+bez+', '+eur2(b)+')');
-  closeSheet(); renderAll(); toast('Beleg erfasst');
+  const werte={datum:document.getElementById('k_datum').value||today(),
+    betrag:b,bezeichnung:bez,kategorie:document.getElementById('k_kat').value};
+  if(editId){
+    Object.assign(data.kosten.find(x=>x.id===editId), werte);
+    persist(); logChange('hat einen Beleg geändert ('+bez+', '+eur2(b)+')');
+  } else {
+    data.kosten.push({id:uid(), ...werte});
+    persist(); logChange('hat einen Beleg erfasst ('+bez+', '+eur2(b)+')');
+  }
+  editId=null; closeSheet(); renderAll(); toast('Beleg gespeichert');
 }
 
-function openMaterial(){
-  openSheet('Material hinzufügen',`
-    <label class="f"><span class="lab">Bezeichnung</span><input id="m_bez" placeholder="z. B. Kalksandstein 17,5"></label>
-    <label class="f"><span class="lab">Menge (optional)</span><input id="m_menge" placeholder="z. B. 8 Paletten"></label>
+function openMaterial(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.material.find(x=>x.id===editId) : null;
+  openSheet(e?'Material bearbeiten':'Material hinzufügen',`
+    <label class="f"><span class="lab">Bezeichnung</span><input id="m_bez" placeholder="z. B. Kalksandstein 17,5" value="${e?esc(e.bezeichnung):''}"></label>
+    <label class="f"><span class="lab">Menge (optional)</span><input id="m_menge" placeholder="z. B. 8 Paletten" value="${e?esc(e.menge||''):''}"></label>
     <label class="f"><span class="lab">Status</span>
-      <select id="m_status"><option value="geplant">Geplant</option><option value="bestellt">Bestellt</option><option value="geliefert">Geliefert</option></select></label>
-    <label class="f"><span class="lab">Notiz (optional)</span><input id="m_notiz" placeholder="Lieferant, Termin …"></label>
-    <button class="btn block" onclick="saveMaterial()">Hinzufügen</button>`);
+      <select id="m_status">
+        ${[['geplant','Geplant'],['bestellt','Bestellt'],['geliefert','Geliefert']]
+          .map(([v,l])=>`<option value="${v}" ${e&&e.status===v?'selected':''}>${l}</option>`).join('')}
+      </select></label>
+    <label class="f"><span class="lab">Notiz (optional)</span><input id="m_notiz" placeholder="Lieferant, Termin …" value="${e?esc(e.notiz||''):''}"></label>
+    <button class="btn block" onclick="saveMaterial()">${e?'Speichern':'Hinzufügen'}</button>`);
 }
 function saveMaterial(){
   const bez=document.getElementById('m_bez').value.trim();
   if(!bez){ toast('Bezeichnung fehlt'); return; }
-  data.material.push({id:uid(),bezeichnung:bez,menge:document.getElementById('m_menge').value.trim(),
-    status:document.getElementById('m_status').value,notiz:document.getElementById('m_notiz').value.trim()});
-  persist(); logChange('hat Material hinzugefügt ('+bez+')');
-  closeSheet(); renderMaterial(); toast('Material hinzugefügt');
+  const werte={bezeichnung:bez,menge:document.getElementById('m_menge').value.trim(),
+    status:document.getElementById('m_status').value,notiz:document.getElementById('m_notiz').value.trim()};
+  if(editId){
+    Object.assign(data.material.find(x=>x.id===editId), werte);
+    persist(); logChange('hat Material geändert ('+bez+')');
+  } else {
+    data.material.push({id:uid(), ...werte});
+    persist(); logChange('hat Material hinzugefügt ('+bez+')');
+  }
+  editId=null; closeSheet(); renderMaterial(); toast('Material gespeichert');
 }
 
-function openTermin(){
-  openSheet('Termin hinzufügen',`
-    <label class="f"><span class="lab">Datum</span><input id="t_datum" type="date" value="${today()}"></label>
-    <label class="f"><span class="lab">Titel</span><input id="t_titel" placeholder="z. B. Betonlieferung, Rohbauabnahme"></label>
-    <label class="f"><span class="lab">Notiz (optional)</span><input id="t_notiz" placeholder="Uhrzeit, Details …"></label>
-    <button class="btn block" onclick="saveTermin()">Hinzufügen</button>`);
+function openTermin(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.termine.find(x=>x.id===editId) : null;
+  openSheet(e?'Termin bearbeiten':'Termin hinzufügen',`
+    <label class="f"><span class="lab">Datum</span><input id="t_datum" type="date" value="${e?e.datum:today()}"></label>
+    <label class="f"><span class="lab">Titel</span><input id="t_titel" placeholder="z. B. Betonlieferung, Rohbauabnahme" value="${e?esc(e.titel):''}"></label>
+    <label class="f"><span class="lab">Notiz (optional)</span><input id="t_notiz" placeholder="Uhrzeit, Details …" value="${e?esc(e.notiz||''):''}"></label>
+    <button class="btn block" onclick="saveTermin()">${e?'Speichern':'Hinzufügen'}</button>`);
 }
 function saveTermin(){
   const titel=document.getElementById('t_titel').value.trim();
   if(!titel){ toast('Titel fehlt'); return; }
-  data.termine.push({id:uid(),datum:document.getElementById('t_datum').value||today(),
-    titel,notiz:document.getElementById('t_notiz').value.trim()});
-  persist(); logChange('hat einen Termin hinzugefügt ('+titel+')');
-  closeSheet(); renderTermine(); renderDash(); toast('Termin hinzugefügt');
+  const werte={datum:document.getElementById('t_datum').value||today(),
+    titel,notiz:document.getElementById('t_notiz').value.trim()};
+  if(editId){
+    Object.assign(data.termine.find(x=>x.id===editId), werte);
+    persist(); logChange('hat einen Termin geändert ('+titel+')');
+  } else {
+    data.termine.push({id:uid(), ...werte});
+    persist(); logChange('hat einen Termin hinzugefügt ('+titel+')');
+  }
+  editId=null; closeSheet(); renderTermine(); renderDash(); toast('Termin gespeichert');
 }
 
-function openMangel(){
-  openSheet('Mangel notieren',`
-    <label class="f"><span class="lab">Beschreibung</span><input id="mg_besch" placeholder="z. B. Fuge Bad undicht"></label>
-    <label class="f"><span class="lab">Ort (optional)</span><input id="mg_ort" placeholder="z. B. Bad OG"></label>
-    <button class="btn block" onclick="saveMangel()">Notieren</button>`);
+function openMangel(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.maengel.find(x=>x.id===editId) : null;
+  openSheet(e?'Mangel bearbeiten':'Mangel notieren',`
+    <label class="f"><span class="lab">Beschreibung</span><input id="mg_besch" placeholder="z. B. Fuge Bad undicht" value="${e?esc(e.beschreibung):''}"></label>
+    <label class="f"><span class="lab">Ort (optional)</span><input id="mg_ort" placeholder="z. B. Bad OG" value="${e?esc(e.ort||''):''}"></label>
+    <button class="btn block" onclick="saveMangel()">${e?'Speichern':'Notieren'}</button>`);
 }
 function saveMangel(){
   const b=document.getElementById('mg_besch').value.trim();
   if(!b){ toast('Beschreibung fehlt'); return; }
-  data.maengel.push({id:uid(),beschreibung:b,ort:document.getElementById('mg_ort').value.trim(),status:'offen'});
-  persist(); logChange('hat einen Mangel notiert ('+b+')');
-  closeSheet(); renderMaengel(); renderDash(); toast('Mangel notiert');
+  const ort=document.getElementById('mg_ort').value.trim();
+  if(editId){
+    Object.assign(data.maengel.find(x=>x.id===editId), {beschreibung:b, ort});
+    persist(); logChange('hat einen Mangel geändert ('+b+')');
+  } else {
+    data.maengel.push({id:uid(),beschreibung:b,ort,status:'offen'});
+    persist(); logChange('hat einen Mangel notiert ('+b+')');
+  }
+  editId=null; closeSheet(); renderMaengel(); renderDash(); toast('Mangel gespeichert');
 }
 
-function openTagebuch(){
-  openSheet('Tagebucheintrag',`
+function openTagebuch(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.tagebuch.find(x=>x.id===editId) : null;
+  openSheet(e?'Eintrag bearbeiten':'Tagebucheintrag',`
     <div class="two">
-      <label class="f"><span class="lab">Datum</span><input id="tb_datum" type="date" value="${today()}"></label>
-      <label class="f"><span class="lab">Wetter (optional)</span><input id="tb_wetter" placeholder="z. B. sonnig, 24°"></label>
+      <label class="f"><span class="lab">Datum</span><input id="tb_datum" type="date" value="${e?e.datum:today()}"></label>
+      <label class="f"><span class="lab">Wetter (optional)</span><input id="tb_wetter" placeholder="z. B. sonnig, 24°" value="${e?esc(e.wetter||''):''}"></label>
     </div>
-    <label class="f"><span class="lab">Was ist passiert?</span><textarea id="tb_text" placeholder="Wer war da, was wurde geschafft, Besonderheiten …"></textarea></label>
+    <label class="f"><span class="lab">Was ist passiert?</span><textarea id="tb_text" placeholder="Wer war da, was wurde geschafft, Besonderheiten …">${e?esc(e.text):''}</textarea></label>
     <button class="btn block" onclick="saveTagebuch()">Speichern</button>`);
 }
 function saveTagebuch(){
   const t=document.getElementById('tb_text').value.trim();
   if(!t){ toast('Text fehlt'); return; }
-  data.tagebuch.push({id:uid(),datum:document.getElementById('tb_datum').value||today(),
-    text:t,wetter:document.getElementById('tb_wetter').value.trim()});
-  persist(); logChange('hat einen Tagebucheintrag geschrieben');
-  closeSheet(); renderTagebuch(); renderDash(); toast('Eintrag gespeichert');
+  const werte={datum:document.getElementById('tb_datum').value||today(),
+    text:t,wetter:document.getElementById('tb_wetter').value.trim()};
+  if(editId){
+    Object.assign(data.tagebuch.find(x=>x.id===editId), werte);
+    persist(); logChange('hat einen Tagebucheintrag geändert');
+  } else {
+    data.tagebuch.push({id:uid(), ...werte});
+    persist(); logChange('hat einen Tagebucheintrag geschrieben');
+  }
+  editId=null; closeSheet(); renderTagebuch(); renderDash(); toast('Eintrag gespeichert');
 }
 
-function openKontakt(){
-  openSheet('Kontakt hinzufügen',`
-    <label class="f"><span class="lab">Name</span><input id="c_name" placeholder="z. B. Fa. Huber"></label>
-    <label class="f"><span class="lab">Rolle</span><input id="c_rolle" placeholder="z. B. Elektriker, Architekt"></label>
-    <label class="f"><span class="lab">Telefon (optional)</span><input id="c_tel" type="tel" placeholder="0170 …"></label>
-    <label class="f"><span class="lab">Notiz (optional)</span><input id="c_notiz"></label>
-    <button class="btn block" onclick="saveKontakt()">Hinzufügen</button>`);
+function openKontakt(id){
+  if(!guardEdit()) return;
+  editId=id||null;
+  const e = editId ? data.kontakte.find(x=>x.id===editId) : null;
+  openSheet(e?'Kontakt bearbeiten':'Kontakt hinzufügen',`
+    <label class="f"><span class="lab">Name</span><input id="c_name" placeholder="z. B. Fa. Huber" value="${e?esc(e.name):''}"></label>
+    <label class="f"><span class="lab">Rolle</span><input id="c_rolle" placeholder="z. B. Elektriker, Architekt" value="${e?esc(e.rolle||''):''}"></label>
+    <label class="f"><span class="lab">Telefon (optional)</span><input id="c_tel" type="tel" placeholder="0170 …" value="${e?esc(e.telefon||''):''}"></label>
+    <label class="f"><span class="lab">Notiz (optional)</span><input id="c_notiz" value="${e?esc(e.notiz||''):''}"></label>
+    <button class="btn block" onclick="saveKontakt()">${e?'Speichern':'Hinzufügen'}</button>`);
 }
 function saveKontakt(){
   const n=document.getElementById('c_name').value.trim();
   if(!n){ toast('Name fehlt'); return; }
-  data.kontakte.push({id:uid(),name:n,rolle:document.getElementById('c_rolle').value.trim(),
-    telefon:document.getElementById('c_tel').value.trim(),notiz:document.getElementById('c_notiz').value.trim()});
-  persist(); logChange('hat einen Kontakt hinzugefügt ('+n+')');
-  closeSheet(); renderKontakte(); toast('Kontakt hinzugefügt');
+  const werte={name:n,rolle:document.getElementById('c_rolle').value.trim(),
+    telefon:document.getElementById('c_tel').value.trim(),notiz:document.getElementById('c_notiz').value.trim()};
+  if(editId){
+    Object.assign(data.kontakte.find(x=>x.id===editId), werte);
+    persist(); logChange('hat einen Kontakt geändert ('+n+')');
+  } else {
+    data.kontakte.push({id:uid(), ...werte});
+    persist(); logChange('hat einen Kontakt hinzugefügt ('+n+')');
+  }
+  editId=null; closeSheet(); renderKontakte(); toast('Kontakt gespeichert');
 }
 
 /* ---------- photo upload (compressed) ---------- */
@@ -1380,7 +1581,55 @@ function askPhotoMeta(preview, blob){
     </div>
     <button class="btn block" onclick="savePhoto()">Foto speichern</button>`);
 }
+function openLightbox(id){
+  const f=data.bilder.find(x=>x.id===id); if(!f) return;
+  lbId=id;
+  const quelle=document.getElementById('img-'+id);
+  document.getElementById('lbImg').src = quelle ? quelle.src : '';
+  document.getElementById('lbTitel').textContent = f.titel || 'Ohne Titel';
+  document.getElementById('lbMeta').textContent = fmtDate(f.datum) + (f.phase ? ' · '+f.phase : '');
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lbImg').src='';
+  lbId=null;
+}
+let lbId=null;
+function editPhotoFromLb(){
+  const id=lbId; closeLightbox(); editPhoto(id);
+}
+function editPhoto(id){
+  if(!guardEdit()) return;
+  const f=data.bilder.find(x=>x.id===id); if(!f) return;
+  editId=id; pendingBlob=null;
+  const phaseOpts=['',...data.phasen.map(p=>p.name)]
+    .map(n=>`<option value="${esc(n)}" ${f.phase===n?'selected':''}>${n?esc(n):'— keine —'}</option>`).join('');
+  const img=document.getElementById('img-'+id);
+  openSheet('Foto bearbeiten',`
+    ${img&&img.src?`<div style="border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px;background:var(--paper)">
+      <img src="${img.src}" style="width:100%;display:block;max-height:200px;object-fit:contain"></div>`:''}
+    <label class="f"><span class="lab">Titel / Beschreibung</span><input id="ph_titel" value="${esc(f.titel||'')}" placeholder="z. B. Bodenplatte fertig"></label>
+    <div class="two">
+      <label class="f"><span class="lab">Datum</span><input id="ph_datum" type="date" value="${f.datum}"></label>
+      <label class="f"><span class="lab">Phase</span><select id="ph_phase">${phaseOpts}</select></label>
+    </div>
+    <button class="btn block" onclick="savePhoto()">Speichern</button>`);
+}
+
 async function savePhoto(){
+  // Bearbeiten eines vorhandenen Fotos
+  if(editId && !pendingBlob){
+    const f=data.bilder.find(x=>x.id===editId);
+    if(f){
+      f.titel=document.getElementById('ph_titel').value.trim();
+      f.datum=document.getElementById('ph_datum').value||f.datum;
+      f.phase=document.getElementById('ph_phase').value;
+      persist(); logChange('hat eine Bildbeschreibung geändert');
+    }
+    editId=null; closeSheet(); renderBilder(); toast('Foto gespeichert');
+    return;
+  }
   if(!pendingBlob) return;
   const id=uid();
   toast('Foto wird hochgeladen …');
@@ -1419,31 +1668,55 @@ const NAV=[
   ['setup','Projekt','M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 00-1.7-1l-.3-2.5H9.4l-.3 2.5a7 7 0 00-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 000 2l-2 1.5 2 3.4 2.3-1a7 7 0 001.7 1l.3 2.5h5.2l.3-2.5a7 7 0 001.7-1l2.3 1 2-3.4-2-1.5a7 7 0 00.1-1z']
 ];
 function buildNav(){
-  const nav=document.getElementById('nav');
-  nav.innerHTML=NAV.map(([id,lab,path])=>`
+  document.getElementById('drawerList').innerHTML=NAV.map(([id,lab,path])=>`
     <button data-view="${id}" onclick="go('${id}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>
       <span class="nlab">${lab}</span>
     </button>`).join('');
-  nav.addEventListener('scroll', updateNavFades, {passive:true});
-  window.addEventListener('resize', updateNavFades);
-  updateNavFades();
+  document.getElementById('drawerFoot').innerHTML =
+    `Angemeldet als ${esc(currentUser||'—')}${READONLY?' · nur lesen':''}`;
 }
-function updateNavFades(){
-  const nav=document.getElementById('nav'); if(!nav) return;
-  const l=document.getElementById('navFadeL'), r=document.getElementById('navFadeR');
-  const maxScroll=nav.scrollWidth-nav.clientWidth-2;
-  if(l) l.classList.toggle('show', nav.scrollLeft>4);
-  if(r) r.classList.toggle('show', nav.scrollLeft<maxScroll);
+function toggleDrawer(){
+  const d=document.getElementById('drawer');
+  d.classList.contains('open') ? closeDrawer() : openDrawer();
+}
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerBg').classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerBg').classList.remove('open');
 }
 function go(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('v-'+id).classList.add('active');
-  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
-  const ab=document.querySelector('#nav button[data-view="'+id+'"]');
-  if(ab) ab.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
-  setTimeout(updateNavFades,350);
+  document.querySelectorAll('#drawerList button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  closeDrawer();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- Monats-Gruppierung ---------- */
+const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+function monatLabel(d){
+  if(!d) return 'Ohne Datum';
+  const [y,m]=d.split('-'); const mi=parseInt(m,10)-1;
+  return (MONATE[mi]||'?')+' '+y;
+}
+// Liste (bereits sortiert) in Monatsblöcke zerlegen und rendern
+function renderByMonth(list, rowFn, sumFn, sumFmt){
+  const bloecke=[]; let akt=null;
+  list.forEach(x=>{
+    const lab=monatLabel(x.datum);
+    if(!akt || akt.lab!==lab){ akt={lab, items:[]}; bloecke.push(akt); }
+    akt.items.push(x);
+  });
+  return bloecke.map(b=>{
+    const summe = sumFn ? b.items.reduce((a,x)=>a+sumFn(x),0) : null;
+    return `<div class="mhead"><span class="mname">${b.lab}</span>`
+      + (summe!==null?`<span class="msum">${sumFmt(summe)}</span>`:'')
+      + `</div>` + b.items.map(rowFn).join('');
+  }).join('');
 }
 
 /* ============================================================

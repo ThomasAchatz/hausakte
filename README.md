@@ -150,6 +150,25 @@ automatisch an. Unter *Authentication → Providers → Email* sollte
 Bilder über zeitlich begrenzte, signierte Links — öffentlich erreichbar
 sind sie damit nicht.
 
+## Bedienung
+
+**Menü:** oben rechts der Burger — er öffnet eine Schublade von rechts mit
+allen Bereichen untereinander.
+
+**Übersicht:** jede Kachel ist antippbar und springt in den passenden
+Bereich (Mängel-Kachel → Mängelliste, Ausgaben → Kosten und so weiter).
+
+**Bearbeiten:** jede Zeile antippen öffnet den Eintrag vorausgefüllt zum
+Ändern. Das × daneben löscht — allerdings erst nach einer Rückfrage, die
+zeigt, welcher Eintrag betroffen ist.
+
+**Monate:** längere Listen (Stunden, Firmen, Kosten, Termine, Tagebuch,
+Fotos) sind nach Monaten gruppiert, jeweils mit Monatssumme in der
+Zwischenüberschrift.
+
+**Fotos:** Tippen aufs Bild öffnet es im Vollbild; dort lassen sich über
+*Bearbeiten* Beschreibung, Datum und Bauphase ändern.
+
 ## Erste Schritte in der App
 
 Zuerst im Reiter **Projekt** Budget, Stundensatz und die Namen setzen. Der

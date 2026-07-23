@@ -1,9 +1,10 @@
 # Bauakte
 
 Ein Bau-Cockpit für den eigenen Hausbau: Stunden erfassen (mit Wert der
-Eigenleistung), Baufortschritt über Phasen verfolgen, Kosten gegen Budget,
-Material, Termine, Mängel, Bautagebuch, Fotos und Kontakte — alles an einem
-Ort und geräteübergreifend geteilt.
+Eigenleistung), Firmenstunden getrennt davon mitschreiben, Baufortschritt
+über Phasen verfolgen, Kosten gegen Budget, Material, Termine, Mängel,
+Bautagebuch, Fotos und Kontakte — alles an einem Ort und geräteübergreifend
+geteilt.
 
 Die App ist eine einzelne HTML-Datei ohne Build-Schritt. Die Daten liegen in
 Supabase, sodass sie auf mehreren Geräten dieselben Einträge zeigt.
@@ -11,9 +12,13 @@ Supabase, sodass sie auf mehreren Geräten dieselben Einträge zeigt.
 ## Dateien
 
 - `index.html` — die komplette App
-- `manifest.webmanifest`, `sw.js` — machen die App installierbar (PWA)
+- `manifest.webmanifest`, `sw.js` — machen die App installierbar (PWA) und
+  zeigen Push-Benachrichtigungen an
 - `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `favicon-32.png` — App-Icons
 - `supabase-setup.sql` — Tabelle, Rollen/Zugriffsregeln und Foto-Ordner
+- `push-setup.sql` — Tabellen, Auslöser und Zeitplan für Benachrichtigungen
+- `supabase/functions/bauakte-push/index.ts` — Edge Function, die die
+  Benachrichtigungen verschickt
 - `.gitignore`
 
 ## Einrichtung
@@ -79,6 +84,42 @@ Danach liegt die Bauakte mit eigenem Icon als App auf dem Startbildschirm
 und startet im Vollbild. Dafür sorgen `manifest.webmanifest`, `sw.js` und
 die Icon-Dateien — sie müssen im selben Ordner wie `index.html` liegen.
 
+## Push-Benachrichtigungen einrichten
+
+Isabella und Thomas werden benachrichtigt, wenn die jeweils andere Person
+etwas ändert. Regel: **eine einzelne Änderung meldet sofort** (mit Angabe,
+was geändert wurde); kommen in den **10 Minuten danach** weitere Änderungen,
+werden sie gesammelt und anschließend als **eine** Meldung nachgeschoben.
+Über eigene Änderungen wird niemand benachrichtigt. Nur-Lese-Konten lösen
+keine Meldungen aus.
+
+> **Achtung — nichts Geheimes ins Repository!** Der private Push-Schlüssel
+> und das Geheimwort gehören ausschließlich in die Supabase-Secrets bzw. in
+> den SQL Editor. Die Datei `push-setup.sql` enthält bewusst nur den
+> Platzhalter `HIER_GEHEIMWORT_EINTRAGEN` — beim Ausführen im SQL Editor
+> ersetzen, die *committete* Datei aber mit Platzhalter belassen.
+
+**1. Edge Function deployen.** Im Dashboard unter *Edge Functions → Deploy a
+new function*, Name **`bauakte-push`**, und den Inhalt von
+`supabase/functions/bauakte-push/index.ts` einfügen. Beim Deployen die
+JWT-Prüfung **deaktivieren** („Verify JWT" aus) — die Funktion schützt sich
+über ein eigenes Geheimwort.
+
+**2. Secrets setzen.** Unter *Edge Functions → Secrets* diese vier Werte
+anlegen (die Werte stehen im Chat, nicht in diesem Repository):
+`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (z. B.
+`mailto:…`) und `PUSH_SECRET`.
+
+**3. `push-setup.sql` ausführen.** Vorher an den **zwei** markierten Stellen
+den Platzhalter durch das Geheimwort ersetzen. Das Skript legt die Tabellen
+an, verknüpft den Auslöser und richtet den Minuten-Zeitplan fürs Bündeln
+ein.
+
+**4. In der App aktivieren.** Jede Person öffnet die Bauakte auf ihrem Handy,
+geht auf **Projekt → Benachrichtigungen** und tippt *einschalten*. Auf dem
+iPhone funktioniert das **nur mit der zum Home-Bildschirm hinzugefügten
+App**, nicht im normalen Safari-Tab.
+
 ## Sicherheit & Rollen — bitte lesen
 
 Die App ist durch einen **Login** geschützt: Daten und Fotos sind nur für
@@ -113,3 +154,10 @@ sind sie damit nicht.
 
 Zuerst im Reiter **Projekt** Budget, Stundensatz und die Namen setzen. Der
 Stundensatz bestimmt den ausgewiesenen Wert der Eigenleistung.
+
+**Stunden** sind die eigenen Stunden (ihr beide plus Helfer aus Familie und
+Freundeskreis) — daraus errechnet sich die Muskelhypothek. **Firmen** ist
+davon getrennt: dort werden Fremdstunden pro Firma mit Anzahl der Arbeiter
+erfasst (z. B. „Zimmerei Huber, 3 Arbeiter × 8 h"). Diese Stunden fließen
+**nicht** in die Eigenleistung ein und bekommen bewusst keinen Euro-Wert —
+sie dienen nur dem Überblick, wer wann mit wie vielen Leuten da war.

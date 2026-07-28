@@ -180,3 +180,8 @@ davon getrennt: dort werden Fremdstunden pro Firma mit Anzahl der Arbeiter
 erfasst (z. B. „Zimmerei Huber, 3 Arbeiter × 8 h"). Diese Stunden fließen
 **nicht** in die Eigenleistung ein und bekommen bewusst keinen Euro-Wert —
 sie dienen nur dem Überblick, wer wann mit wie vielen Leuten da war.
+
+**Kosten** haben ein Feld **„Ausgelegt von"** (Standard: die eingeloggte
+Person). In der Belegliste steht es unter der Kategorie, und oben in der
+Zusammenfassung gibt es eine Aufschlüsselung, wer wie viel ausgelegt hat —
+praktisch, um später auszugleichen.

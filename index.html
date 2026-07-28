@@ -74,6 +74,9 @@
     background:rgba(44,93,99,0.15);
   }
   .glyph svg{width:22px;height:22px;}
+  button.glyph{cursor:pointer;padding:0;transition:background .15s, transform .09s;}
+  button.glyph:hover{background:rgba(44,93,99,0.28);}
+  button.glyph:active{transform:scale(.94);}
   .tb-main{flex:1;min-width:0;}
   .tb-main .kicker{
     font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;
@@ -450,11 +453,11 @@
 
 <header>
   <div class="titleblock">
-    <div class="glyph" aria-hidden="true">
+    <button class="glyph" onclick="go('dash')" aria-label="Zur Übersicht">
       <svg viewBox="0 0 24 24" fill="none" stroke="#7FBAC0" stroke-width="1.6" stroke-linejoin="round">
         <path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/>
       </svg>
-    </div>
+    </button>
     <div class="tb-main">
       <div class="kicker">Bauakte · Eigenleistung</div>
       <h1 id="projName">Unser Eigenheim</h1>
@@ -1011,6 +1014,7 @@ function renderKosten(){
       </div>
       ${budget>0?`<div class="bar"><i style="width:${bar}%;background:${rest<0?'var(--signal)':'var(--accent)'}"></i></div>
         <div class="metric" style="padding:6px 0 0"><div class="sub ${rest<0?'warn':'ok'}">${rest<0?eur(-rest)+' über Budget':eur(rest)+' verbleibend'}</div></div>`:''}
+      ${(()=>{const per={};data.kosten.forEach(x=>{if(x.ausgelegt)per[x.ausgelegt]=(per[x.ausgelegt]||0)+(+x.betrag||0);});const rows=Object.entries(per).sort((a,b)=>b[1]-a[1]);return rows.length?`<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--line)"><div class="eyebrow" style="margin-bottom:6px">Ausgelegt von</div>${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px;padding:3px 0"><span style="color:var(--ink)">${esc(k)}</span><span style="color:var(--ink-soft)">${eur2(v)}</span></div>`).join('')}</div>`:'';})()}
     </div></div>`;
   const list=[...data.kosten].sort((a,b)=>b.datum.localeCompare(a.datum));
   const el=document.getElementById('kostenList');
@@ -1020,7 +1024,7 @@ function renderKosten(){
       <span class="datechip">${fmtDate(x.datum)}</span>
       <div class="grow">
         <div class="t1">${esc(x.bezeichnung)}</div>
-        <div class="t2">${esc(x.kategorie)||'Sonstiges'}</div>
+        <div class="t2">${esc(x.kategorie)||'Sonstiges'}${x.ausgelegt?' · ausgelegt: '+esc(x.ausgelegt):''}</div>
       </div>
       <span class="amt neg">${eur2(x.betrag)}</span>
       <button class="row-x" onclick="event.stopPropagation();askDel('kosten','${x.id}')">×</button>
@@ -1151,7 +1155,7 @@ function renderKontakte(){
 
 function renderSetup(){
   const m=data.meta;
-  document.getElementById('setupBody').innerHTML=`
+  const einstellungen = READONLY ? '' : `
     <label class="f"><span class="lab">Projektname</span><input id="s_proj" value="${esc(m.projekt)}"></label>
     <label class="f"><span class="lab">Ort</span><input id="s_ort" value="${esc(m.ort)}"></label>
     <div class="two">
@@ -1159,8 +1163,13 @@ function renderSetup(){
       <label class="f"><span class="lab">Stundensatz (€/h)</span><input id="s_satz" type="number" inputmode="numeric" value="${m.stundensatz||''}"></label>
     </div>
     <label class="f"><span class="lab">Personen (Komma-getrennt)</span><input id="s_pers" value="${esc(data.personen.join(', '))}"></label>
-    <button class="btn block" onclick="saveSetup()">Speichern</button>
-    <div style="margin-top:20px;padding-top:15px;border-top:1px solid var(--line)">
+    <button class="btn block" onclick="saveSetup()">Speichern</button>`;
+  const hinweis = READONLY
+    ? 'Du hast Nur-Lese-Zugang — du siehst alles, kannst aber nichts ändern.'
+    : 'Der Stundensatz bestimmt den Wert eurer Eigenleistung (Muskelhypothek).<br>Daten und Fotos sind nur für angemeldete Personen sichtbar.';
+  document.getElementById('setupBody').innerHTML=`
+    ${einstellungen}
+    <div style="${READONLY?'':'margin-top:20px;padding-top:15px;border-top:1px solid var(--line)'}">
       <div class="eyebrow" style="margin-bottom:8px">Benachrichtigungen</div>
       <div id="pushBox"><div class="sub" style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)">wird geprüft …</div></div>
     </div>
@@ -1169,8 +1178,7 @@ function renderSetup(){
       <button class="btn ghost block" onclick="doLogout()">Abmelden</button>
     </div>
     <p style="font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:16px;letter-spacing:.03em;line-height:1.6">
-      Der Stundensatz bestimmt den Wert eurer Eigenleistung (Muskelhypothek).<br>
-      Daten und Fotos sind nur für angemeldete Personen sichtbar.
+      ${hinweis}
     </p>`;
   renderPushBox();
 }
@@ -1390,25 +1398,33 @@ function openKosten(id){
       <label class="f"><span class="lab">Betrag (€)</span><input id="k_betrag" type="number" inputmode="decimal" step="0.01" placeholder="0,00" value="${e?e.betrag:''}"></label>
     </div>
     <label class="f"><span class="lab">Bezeichnung</span><input id="k_bez" placeholder="z. B. Beton, Dachziegel, Miete Bagger" value="${e?esc(e.bezeichnung):''}"></label>
-    <label class="f"><span class="lab">Kategorie</span>
-      <select id="k_kat">
-        ${['Material','Werkzeug/Miete','Handwerker','Gebühren/Amt','Sonstiges']
-          .map(k=>`<option ${e&&e.kategorie===k?'selected':''}>${k}</option>`).join('')}
-      </select></label>
+    <div class="two">
+      <label class="f"><span class="lab">Kategorie</span>
+        <select id="k_kat">
+          ${['Material','Werkzeug/Miete','Handwerker','Gebühren/Amt','Sonstiges']
+            .map(k=>`<option ${e&&e.kategorie===k?'selected':''}>${k}</option>`).join('')}
+        </select></label>
+      <label class="f"><span class="lab">Ausgelegt von</span>
+        <select id="k_von">
+          ${data.personen.map(pn=>`<option ${((e&&e.ausgelegt)||currentUser)===pn?'selected':''}>${esc(pn)}</option>`).join('')}
+          <option value="">— offen —</option>
+        </select></label>
+    </div>
     <button class="btn block" onclick="saveKosten()">${e?'Speichern':'Erfassen'}</button>`);
 }
 function saveKosten(){
   const b=+document.getElementById('k_betrag').value;
   const bez=document.getElementById('k_bez').value.trim();
   if(!b||!bez){ toast('Betrag & Bezeichnung nötig'); return; }
+  const von=document.getElementById('k_von').value;
   const werte={datum:document.getElementById('k_datum').value||today(),
-    betrag:b,bezeichnung:bez,kategorie:document.getElementById('k_kat').value};
+    betrag:b,bezeichnung:bez,kategorie:document.getElementById('k_kat').value, ausgelegt:von};
   if(editId){
     Object.assign(data.kosten.find(x=>x.id===editId), werte);
     persist(); logChange('hat einen Beleg geändert ('+bez+', '+eur2(b)+')');
   } else {
     data.kosten.push({id:uid(), ...werte});
-    persist(); logChange('hat einen Beleg erfasst ('+bez+', '+eur2(b)+')');
+    persist(); logChange('hat einen Beleg erfasst ('+bez+', '+eur2(b)+(von?', ausgelegt von '+von:'')+')');
   }
   editId=null; closeSheet(); renderAll(); toast('Beleg gespeichert');
 }
@@ -1667,8 +1683,10 @@ const NAV=[
   ['kontakte','Kontakte','M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z'],
   ['setup','Projekt','M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 00-1.7-1l-.3-2.5H9.4l-.3 2.5a7 7 0 00-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 000 2l-2 1.5 2 3.4 2.3-1a7 7 0 001.7 1l.3 2.5h5.2l.3-2.5a7 7 0 001.7-1l2.3 1 2-3.4-2-1.5a7 7 0 00.1-1z']
 ];
+const RO_HIDDEN=['stunden','kosten'];   // fuer Nur-Leser ausgeblendete Reiter
 function buildNav(){
-  document.getElementById('drawerList').innerHTML=NAV.map(([id,lab,path])=>`
+  const items = READONLY ? NAV.filter(([id])=>!RO_HIDDEN.includes(id)) : NAV;
+  document.getElementById('drawerList').innerHTML=items.map(([id,lab,path])=>`
     <button data-view="${id}" onclick="go('${id}')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>
       <span class="nlab">${lab}</span>
@@ -1689,6 +1707,7 @@ function closeDrawer(){
   document.getElementById('drawerBg').classList.remove('open');
 }
 function go(id){
+  if(READONLY && RO_HIDDEN.includes(id)) id='dash';
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('v-'+id).classList.add('active');
   document.querySelectorAll('#drawerList button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));

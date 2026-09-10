@@ -491,7 +491,7 @@
   <section class="view" id="v-stunden">
     <div class="view-head"><h2>Stunden</h2><span class="idx">01 · EIGENLEISTUNG</span></div>
     <div id="stundenSummary"></div>
-    <div class="add-row"><button class="btn block" onclick="openStunden()">+ Stunden erfassen</button></div>
+    <div class="add-row"><button class="btn block" onclick="openBautag()">+ Bautag erfassen</button></div>
     <div id="stundenList"></div>
   </section>
 
@@ -554,6 +554,14 @@
     <div id="bilderGrid"></div>
   </section>
 
+  <!-- PLAENE -->
+  <section class="view" id="v-plaene">
+    <div class="view-head"><h2>Pläne</h2><span class="idx">08b · DOKUMENTE</span></div>
+    <div class="add-row"><button class="btn block" onclick="document.getElementById('planInput').click()">+ Plan hochladen</button></div>
+    <input type="file" id="planInput" accept=".pdf,.png,.jpg,.jpeg,.dwg,.dxf,image/*,application/pdf" style="display:none" onchange="handlePlan(event)">
+    <div id="plaeneList"></div>
+  </section>
+
   <!-- KONTAKTE -->
   <section class="view" id="v-kontakte">
     <div class="view-head"><h2>Kontakte</h2><span class="idx">09 · BETEILIGTE</span></div>
@@ -610,6 +618,7 @@ const SUPABASE_URL = 'https://lmivqyeuluqtxmpnojgz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XZksHj8kBG7POmhlDWxIrw_9CyH2RI4';
 const DATA_KEY = 'bauakte-data';
 const BUCKET = 'fotos';
+const PLAN_BUCKET = 'plaene';
 
 let sb = null;
 try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
@@ -649,6 +658,21 @@ const cloud = {
   async deletePhoto(id){
     if(!sb) return;
     try{ await sb.storage.from(BUCKET).remove([id+'.jpg']); }catch(e){}
+  },
+  async uploadPlan(path, file){
+    if(!sb) return false;
+    const {error} = await sb.storage.from(PLAN_BUCKET).upload(path, file, {contentType:file.type||'application/octet-stream', upsert:true});
+    if(error) console.error(error);
+    return !error;
+  },
+  async signedPlan(path){
+    if(!sb) return null;
+    const {data, error} = await sb.storage.from(PLAN_BUCKET).createSignedUrl(path, 3600);
+    return error ? null : data.signedUrl;
+  },
+  async deletePlan(path){
+    if(!sb) return;
+    try{ await sb.storage.from(PLAN_BUCKET).remove([path]); }catch(e){}
   }
 };
 
@@ -735,7 +759,7 @@ const blankData = () => ({
   personen:['Isabella','Thomas'],
   firmen:[],
   stunden:[], firmenstunden:[], kosten:[], material:[], termine:[], maengel:[], kontakte:[], tagebuch:[],
-  bilder:[],
+  bilder:[], plaene:[],
   phasen: DEFAULT_PHASES.map((n,i)=>({id:'p'+i, name:n, status:'offen'}))
 });
 
@@ -832,7 +856,7 @@ function renderAll(){
   document.getElementById('hdrPct').textContent = progress()+'%';
   renderDash(); renderStunden(); renderFirma(); renderPhases(); renderKosten();
   renderMaterial(); renderTermine(); renderMaengel(); renderTagebuch();
-  renderBilder(); renderKontakte(); renderSetup();
+  renderBilder(); renderPlaene(); renderKontakte(); renderSetup();
 }
 
 function renderDash(){
@@ -1281,6 +1305,69 @@ async function delPhoto(id){
   await cloud.deletePhoto(id);
 }
 
+/* ---------- Pläne (beliebige Dokumente) ---------- */
+const planIcon = t => (t||'').includes('pdf') ? '📄' : (t||'').startsWith('image') ? '🖼' : '📁';
+function fileGroesse(b){
+  if(!b && b!==0) return '';
+  if(b<1024) return b+' B';
+  if(b<1024*1024) return (b/1024).toFixed(0)+' KB';
+  return (b/1024/1024).toFixed(1)+' MB';
+}
+function renderPlaene(){
+  const el=document.getElementById('plaeneList');
+  const list=[...(data.plaene||[])].sort((a,b)=>b.datum.localeCompare(a.datum));
+  if(!list.length){ el.innerHTML=`<div class="empty"><b>Keine Pläne</b>Lade Grundrisse, Statik oder Elektropläne hoch — als PDF oder Bild. Ältere bleiben erhalten.</div>`; return; }
+  el.innerHTML=renderByMonth(list, x=>`
+    <div class="item tap" onclick="openPlan('${x.id}')">
+      <span class="datechip">${fmtDate(x.datum)}</span>
+      <div class="grow">
+        <div class="t1">${planIcon(x.typ)} ${esc(x.name)}</div>
+        <div class="t2">${x.groesse?fileGroesse(x.groesse):''}${x.hochvon?(x.groesse?' · ':'')+'von '+esc(x.hochvon):''}</div>
+      </div>
+      <button class="row-x" onclick="event.stopPropagation();askDelPlan('${x.id}')" aria-label="Löschen">×</button>
+    </div>`);
+}
+function handlePlan(ev){
+  const file=ev.target.files[0]; ev.target.value='';
+  if(!file) return;
+  if(!guardEdit()) return;
+  if(file.size > 25*1024*1024){ toast('Datei zu groß (max. 25 MB)'); return; }
+  const id=uid();
+  const safe=(file.name||'plan').replace(/[^\w.\-]+/g,'_');
+  const path=id+'_'+safe;
+  toast('Plan wird hochgeladen …');
+  cloud.uploadPlan(path, file).then(ok=>{
+    if(!ok){ toast('Upload fehlgeschlagen — online?'); return; }
+    if(!data.plaene) data.plaene=[];
+    data.plaene.push({id, path, name:file.name||safe, typ:file.type||'', groesse:file.size||0,
+      datum:today(), hochvon:currentUser});
+    persist(); logChange('hat einen Plan hochgeladen ('+(file.name||safe)+')');
+    renderPlaene(); toast('Plan hochgeladen');
+  });
+}
+async function openPlan(id){
+  const f=(data.plaene||[]).find(x=>x.id===id); if(!f) return;
+  toast('Öffne Plan …');
+  const url=await cloud.signedPlan(f.path);
+  if(!url){ toast('Konnte nicht öffnen'); return; }
+  window.open(url, '_blank');
+}
+function askDelPlan(id){
+  if(!guardEdit()) return;
+  const f=(data.plaene||[]).find(x=>x.id===id);
+  confirmSheet('Plan löschen?',
+    f?`<b>${esc(f.name)}</b> · ${fmtDate(f.datum)}`:'Diesen Plan wirklich löschen?',
+    `delPlan('${id}')`);
+}
+async function delPlan(id){
+  if(READONLY) return;
+  const f=(data.plaene||[]).find(x=>x.id===id);
+  data.plaene=(data.plaene||[]).filter(x=>x.id!==id);
+  closeSheet(); toast('Plan gelöscht');
+  persist(); logChange('hat einen Plan gelöscht'); renderPlaene();
+  if(f) await cloud.deletePlan(f.path);
+}
+
 /* ============================================================
    SHEETS (Formulare)
    ============================================================ */
@@ -1336,6 +1423,66 @@ function saveStunden(){
     persist(); logChange('hat Stunden für '+person+' eingetragen ('+hrs(h)+' h)');
   }
   editId=null; closeSheet(); renderAll(); toast('Stunden gespeichert');
+}
+
+/* ---------- Bautag: mehrere Personen auf einmal ---------- */
+let bautagExtra=0;   // Zähler für zusätzliche freie Namenszeilen
+function bautagRow(name, idx){
+  return `<div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)">
+      <span style="flex:1;font-weight:600;font-size:14.5px">${esc(name)}</span>
+      <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
+        data-person="${esc(name)}" class="bt-h" oninput="btCount()" style="width:88px;text-align:center">
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);width:14px">h</span>
+    </div>`;
+}
+function openBautag(){
+  if(!guardEdit()) return;
+  editId=null; bautagExtra=0;
+  const rows=data.personen.map((n,i)=>bautagRow(n,i)).join('');
+  openSheet('Bautag erfassen',`
+    <label class="f"><span class="lab">Datum</span><input id="bt_datum" type="date" value="${today()}"></label>
+    <div class="lab" style="margin-bottom:2px">Stunden je Person</div>
+    <div id="bt_rows" style="border-top:1px solid var(--line);margin-bottom:4px">${rows}</div>
+    <div id="bt_extra"></div>
+    <button class="btn ghost sm" style="margin:4px 0 16px" onclick="btAddPerson()">+ weitere Person</button>
+    <label class="f"><span class="lab">Tätigkeiten am Tag (gemeinsam)</span>
+      <textarea id="bt_tat" placeholder="z. B. Rohbau EG: Kalksandstein gesetzt, Ringanker geschalt"></textarea></label>
+    <button class="btn block" id="bt_save" onclick="saveBautag()">Speichern</button>`);
+  btCount();
+}
+function btAddPerson(){
+  bautagExtra++;
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)';
+  wrap.innerHTML=`
+    <input type="text" autocapitalize="words" placeholder="Name" class="bt-name" style="flex:1"
+      oninput="this.nextElementSibling.dataset.person=this.value.trim();btCount()">
+    <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0" data-person="" class="bt-h"
+      oninput="btCount()" style="width:88px;text-align:center">
+    <span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);width:14px">h</span>`;
+  document.getElementById('bt_extra').appendChild(wrap);
+}
+function btCount(){
+  const n=[...document.querySelectorAll('.bt-h')].filter(i=>(+i.value||0)>0 && (i.dataset.person||'').trim()).length;
+  const btn=document.getElementById('bt_save');
+  if(btn) btn.textContent = n>0 ? (n===1?'1 Eintrag speichern':n+' Einträge speichern') : 'Speichern';
+}
+function saveBautag(){
+  const datum=document.getElementById('bt_datum').value||today();
+  const tat=document.getElementById('bt_tat').value.trim();
+  const zeilen=[...document.querySelectorAll('.bt-h')]
+    .map(i=>({person:(i.dataset.person||'').trim(), h:+i.value||0}))
+    .filter(z=>z.person && z.h>0);
+  if(!zeilen.length){ toast('Keine Stunden eingetragen'); return; }
+  zeilen.forEach(z=>{
+    if(!data.personen.includes(z.person)) data.personen.push(z.person);
+    data.stunden.push({id:uid(), datum, person:z.person, taetigkeit:tat, stunden:z.h});
+  });
+  persist();
+  const summe=zeilen.reduce((a,z)=>a+z.h,0);
+  logChange('hat einen Bautag erfasst ('+zeilen.length+' Personen, '+hrs(summe)+' h)');
+  closeSheet(); renderAll();
+  toast(zeilen.length+(zeilen.length===1?' Eintrag':' Einträge')+' gespeichert');
 }
 
 /* ---------- Firmenstunden ---------- */
@@ -1680,6 +1827,7 @@ const NAV=[
   ['maengel','Mängel','M12 9v4M12 17h.01M10.3 4.3 2.5 18a1.5 1.5 0 001.3 2.2h16.4a1.5 1.5 0 001.3-2.2L13.7 4.3a1.5 1.5 0 00-2.6 0z'],
   ['tagebuch','Journal','M6 3h11a2 2 0 012 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 012-2z'],
   ['bilder','Fotos','M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6'],
+  ['plaene','Pläne','M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9M14 3v6h6M9 13h6M9 17h4'],
   ['kontakte','Kontakte','M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z'],
   ['setup','Projekt','M12 15a3 3 0 100-6 3 3 0 000 6zM19 12a7 7 0 00-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 00-1.7-1l-.3-2.5H9.4l-.3 2.5a7 7 0 00-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 000 2l-2 1.5 2 3.4 2.3-1a7 7 0 001.7 1l.3 2.5h5.2l.3-2.5a7 7 0 001.7-1l2.3 1 2-3.4-2-1.5a7 7 0 00.1-1z']
 ];

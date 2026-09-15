@@ -499,7 +499,7 @@
   <section class="view" id="v-firma">
     <div class="view-head"><h2>Firmen</h2><span class="idx">01b · FREMDSTUNDEN</span></div>
     <div id="firmaSummary"></div>
-    <div class="add-row"><button class="btn block" onclick="openFirma()">+ Firmenstunden erfassen</button></div>
+    <div class="add-row"><button class="btn block" onclick="openFirmentag()">+ Firmentag erfassen</button></div>
     <div id="firmaList"></div>
   </section>
 
@@ -1533,6 +1533,82 @@ function saveFirma(){
     persist(); logChange('hat Firmenstunden erfasst ('+firma+', '+hrs(anz*h)+' h)');
   }
   editId=null; closeSheet(); renderAll(); toast('Firmenstunden gespeichert');
+}
+
+/* ---------- Firmentag: mehrere Firmen auf einmal ---------- */
+function firmentagRow(name){
+  return `<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)">
+      <span style="flex:1;min-width:0;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input type="number" inputmode="numeric" step="1" min="0" placeholder="0" data-firma="${esc(name)}" class="ft-a" oninput="ftCount()" style="width:52px;text-align:center">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)">Mann</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0" class="ft-h" oninput="ftCount()" style="width:52px;text-align:center">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)">h</span>
+      </div>
+    </div>`;
+}
+function openFirmentag(){
+  if(!guardEdit()) return;
+  editId=null;
+  const rows=(data.firmen||[]).map(f=>firmentagRow(f)).join('');
+  openSheet('Firmentag erfassen',`
+    <label class="f"><span class="lab">Datum</span><input id="ft_datum" type="date" value="${today()}"></label>
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div class="lab" style="margin-bottom:2px">Firmen</div>
+      <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;color:var(--ink-faint);text-transform:uppercase">Arbeiter · Std/Arbeiter</div>
+    </div>
+    <div id="ft_rows" style="border-top:1px solid var(--line);margin-bottom:4px">${rows||'<div class="sub" style="padding:10px 0;color:var(--ink-soft)">Noch keine Firmen — unten eine hinzufügen.</div>'}</div>
+    <div id="ft_extra"></div>
+    <button class="btn ghost sm" style="margin:4px 0 16px" onclick="ftAddFirma()">+ weitere Firma</button>
+    <label class="f"><span class="lab">Tätigkeiten am Tag (gemeinsam)</span>
+      <textarea id="ft_tat" placeholder="z. B. Dachstuhl aufgestellt, Elektro-Leerrohre verlegt"></textarea></label>
+    <button class="btn block" id="ft_save" onclick="saveFirmentag()">Speichern</button>`);
+  ftCount();
+}
+function ftAddFirma(){
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)';
+  wrap.innerHTML=`
+    <input type="text" autocapitalize="words" placeholder="Firma" class="ft-name" style="flex:1;min-width:0"
+      oninput="this.parentElement.querySelector('.ft-a').dataset.firma=this.value.trim();ftCount()">
+    <div style="display:flex;align-items:center;gap:4px">
+      <input type="number" inputmode="numeric" step="1" min="0" placeholder="0" data-firma="" class="ft-a" oninput="ftCount()" style="width:52px;text-align:center">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)">Mann</span></div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0" class="ft-h" oninput="ftCount()" style="width:52px;text-align:center">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)">h</span></div>`;
+  document.getElementById('ft_extra').appendChild(wrap);
+}
+function ftZeilen(){
+  return [...document.querySelectorAll('#ft_rows > div, #ft_extra > div')].map(row=>{
+    const a=row.querySelector('.ft-a'), h=row.querySelector('.ft-h');
+    if(!a||!h) return null;
+    return {firma:(a.dataset.firma||'').trim(), arbeiter:+a.value||0, stunden:+h.value||0};
+  }).filter(z=>z && z.firma && z.arbeiter>0 && z.stunden>0);
+}
+function ftCount(){
+  const n=ftZeilen().length;
+  const btn=document.getElementById('ft_save');
+  if(btn) btn.textContent = n>0 ? (n===1?'1 Eintrag speichern':n+' Einträge speichern') : 'Speichern';
+}
+function saveFirmentag(){
+  const datum=document.getElementById('ft_datum').value||today();
+  const tat=document.getElementById('ft_tat').value.trim();
+  const zeilen=ftZeilen();
+  if(!zeilen.length){ toast('Keine Firmenstunden eingetragen'); return; }
+  if(!data.firmen) data.firmen=[];
+  if(!data.firmenstunden) data.firmenstunden=[];
+  zeilen.forEach(z=>{
+    if(!data.firmen.includes(z.firma)) data.firmen.push(z.firma);
+    data.firmenstunden.push({id:uid(), datum, firma:z.firma, arbeiter:z.arbeiter, stunden:z.stunden, taetigkeit:tat});
+  });
+  persist();
+  const summe=zeilen.reduce((a,z)=>a+z.arbeiter*z.stunden,0);
+  logChange('hat einen Firmentag erfasst ('+zeilen.length+' Firmen, '+hrs(summe)+' h)');
+  closeSheet(); renderAll();
+  toast(zeilen.length+(zeilen.length===1?' Eintrag':' Einträge')+' gespeichert');
 }
 
 function openKosten(id){
